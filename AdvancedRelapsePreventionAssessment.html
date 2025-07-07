@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Relapse Prevention Assessment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #1e293b; /* slate-800 */
+            padding-top: 90px; /* Make space for the fixed dev bar */
+        }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .glass-ui {
+            background: rgba(255, 255, 255, 0.4);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+
+        .btn { 
+            transition: all 0.2s ease-in-out; 
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .btn:disabled { background-color: #94a3b8 !important; color: #e2e8f0 !important; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+
+        .likert-radio { display: none; }
+        .likert-label {
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            background: rgba(255, 255, 255, 0.3);
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #334155;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 1.25rem;
+            border-radius: 0.75rem; height: 4.5rem; width: 100%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .likert-radio:hover + .likert-label {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.1);
+        }
+        .likert-radio:checked + .likert-label {
+            background: #3b82f6; color: #fff;
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 10px 20px rgba(60, 130, 246, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .addiction-checkbox { display: none; }
+        .addiction-checkbox + label {
+            cursor: pointer; transition: all 0.2s ease-in-out; border: 2px solid #e2e8f0;
+            background-color: #fff;
+        }
+        .addiction-checkbox:checked + label {
+            background-color: #dbeafe; border-color: #2563eb; color: #1e3a8a; font-weight: 600;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px;
+            border-radius: 50%; border-left-color: #09f;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #devBar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background-color: #1f2937;
+            border-bottom: 1px solid #4b5563;
+            padding: 0.5rem 1rem;
+            z-index: 1000;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            color: white;
+        }
+        #devBar select, #devBar .btn-dev, #devBar .dev-dropdown-btn {
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+            border: 1px solid #4b5563;
+            background-color: #374151;
+            color: white;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        #devBar .btn-dev:hover, #devBar .dev-dropdown-btn:hover { background-color: #4b5563; }
+        #devBar .btn-dev:disabled { background-color: #4b5563; opacity: 0.5; cursor: not-allowed; }
+        .dev-dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            margin-top: 0.25rem;
+            z-index: 1010;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .dev-dropdown-content label { display: block; padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; }
+        .dev-dropdown-content label:hover { background-color: #4b5563; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div id="devBar">
+        <strong class="text-yellow-400">TESTING BAR</strong>
+        <div class="relative">
+            <button id="devSubstancesBtn" class="dev-dropdown-btn">Substances</button>
+            <div id="devSubstancesDropdown" class="dev-dropdown-content"></div>
+        </div>
+        <select id="devRisk" title="Risk Level"></select>
+        <select id="devGender" title="Gender"><option value="">Gender</option><option>Male</option><option>Female</option><option>Other</option></select>
+        <select id="devAge" title="Age Bracket"><option value="">Age</option><option>18-25</option><option>26-35</option><option>36-50</option><option>51+</option></select>
+        <button id="devFillBtn" class="btn-dev bg-blue-600 hover:bg-blue-700 border-blue-500">Fill & Start</button>
+        <div class="flex-grow"></div>
+        <button id="devResetBtn" class="btn-dev">Reset</button>
+        <button id="devSubmitBtn" class="btn-dev">Submit</button>
+        <button id="devSkipBtn" class="btn-dev">Skip to End</button>
+        <button id="devDownloadBtn" class="btn-dev">Download Q&A</button>
+        <button id="devGenPatientBtn" class="btn-dev" disabled>Patient Report</button>
+        <button id="devGenClinicianBtn" class="btn-dev" disabled>Clinician Report</button>
+    </div>
+
+    <div id="mainContainer" class="container mx-auto max-w-3xl p-4 sm:p-6 md:p-8 min-h-screen flex flex-col justify-center"></div>
+    <div id="reportContainer" class="hidden w-full"></div>
+    <div id="loadingModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-5 border w-96 shadow-lg rounded-md bg-white text-center">
+            <div class="flex justify-center mb-4"><div class="spinner"></div></div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Generating Your Report...</h3>
+            <p class="text-sm text-gray-500 mt-2">This may take a moment. We're analyzing your responses to create a detailed and personalized report.</p>
+        </div>
+    </div>
+
+    <script>
+        const ADDICTIONS = {
+            'Alcohol': { type: 'substance' }, 'Nicotine': { type: 'substance' }, 'Marijuana': { type: 'substance' },
+            'Amphetamine': { type: 'substance' }, 'Methamphetamine': { type: 'substance' }, 'Cocaine': { type: 'substance' },
+            'MDMA': { type: 'substance' }, 'Ketamine': { type: 'substance' }, 'Psychedelics': { type: 'substance' },
+            'Opioids': { type: 'substance' }, 'Benzodiazepines': { type: 'substance' },
+            'Gambling': { type: 'behavior' }, 'Gaming': { type: 'behavior' }, 'Internet/Social Media': { type: 'behavior' }, 'Shopping': { type: 'behavior' }
+        };
+
+        let userState = {};
+        const initialUserState = {
+            currentScreen: 'intro',
+            selectedAddictions: [], coreAnswers: {}, mainAnswers: {},
+            dynamicQuestionSet: [], currentQuestionIndex: 0, results: {}
+        };
+        
+        document.addEventListener('DOMContentLoaded', function () {
+            window.jsPDF = window.jspdf.jsPDF;
+            const fullQuestionBank = [
+                // Affective Dysregulation (30)
+                { id: 'ad01', text: "Have you felt a general 'background noise' of anxiety or tension that's hard to shake off?", category: 'Affective Dysregulation', profiles: ['Anxiety'], tags: ['ALL'] },
+                { id: 'ad02', text: "Have you found yourself snapping at people or feeling irritable over small things?", category: 'Affective Dysregulation', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'ad03', text: "Do you feel emotionally 'flat' or find it difficult to feel strong positive or negative emotions?", category: 'Affective Dysregulation', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'ad04', text: "Have small stressors or problems felt disproportionately overwhelming recently?", category: 'Affective Dysregulation', profiles: ['Anxiety'], tags: ['ALL'] },
+                { id: 'ad05', text: "Have you experienced sudden, unexplained shifts in your mood?", category: 'Affective Dysregulation', profiles: ['Anxiety', 'Trauma'], tags: ['ALL'] },
+                { id: 'ad06', text: "Does the future feel more bleak or hopeless than it used to?", category: 'Affective Dysregulation', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'ad07', text: "Have you felt a sense of dread or impending doom without a clear cause?", category: 'Affective Dysregulation', profiles: ['Anxiety', 'Trauma'], tags: ['ALL'] },
+                { id: 'ad08', text: "Are you finding it harder to laugh or find humor in things?", category: 'Affective Dysregulation', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'ad09', text: "Have you felt physically restless, like you can't sit still?", category: 'Affective Dysregulation', profiles: ['Anxiety'], tags: ['Amphetamine', 'Cocaine', 'Nicotine'] },
+                { id: 'ad10', text: "Do you feel a sense of emptiness, even when you're with people?", category: 'Affective Dysregulation', profiles: ['Depressive', 'Social Alienation'], tags: ['ALL'] },
+                { id: 'ad11', text: "Have you felt overly sensitive to criticism or perceived slights?", category: 'Affective Dysregulation', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'ad12', text: "Are you experiencing more guilt or shame than usual?", category: 'Affective Dysregulation', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'ad13', text: "Have you felt easily startled or 'on edge'?", category: 'Affective Dysregulation', profiles: ['Anxiety', 'Trauma'], tags: ['ALL'] },
+                { id: 'ad14', text: "Do you feel a sense of detachment from your own body or thoughts?", category: 'Affective Dysregulation', profiles: ['Trauma'], tags: ['ALL'] },
+                { id: 'ad15', text: "Have you been crying more easily or more often than is typical for you?", category: 'Affective Dysregulation', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'ad16', text: "Do you feel a constant need for reassurance from others?", category: 'Affective Dysregulation', profiles: ['Anxiety'], tags: ['ALL'] },
+                { id: 'ad17', text: "Have you felt a sense of rage or anger that feels out of your control?", category: 'Affective Dysregulation', profiles: ['Impulsivity'], tags: ['ALL'] },
+                { id: 'ad18', text: "Are you finding it hard to feel empathy for others?", category: 'Affective Dysregulation', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'ad19', text: "Do you feel overwhelmed by simple social interactions?", category: 'Affective Dysregulation', profiles: ['Anxiety', 'Social Alienation'], tags: ['ALL'] },
+                { id: 'ad20', text: "Have you felt a sense of worthlessness or self-hatred?", category: 'Affective Dysregulation', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'ad21', text: "Do you feel 'stuck' in a particular emotion (e.g., sadness, anger)?", category: 'Affective Dysregulation', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'ad22', text: "Are you avoiding activities because you fear having a panic attack?", category: 'Affective Dysregulation', profiles: ['Anxiety'], tags: ['ALL'] },
+                { id: 'ad23', text: "Have you felt jealous or envious of other people's happiness?", category: 'Affective Dysregulation', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'ad24', text: "Do you feel emotionally exhausted, as if you have nothing left to give?", category: 'Affective Dysregulation', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'ad25', text: "Have you had thoughts that you would be better off not being around?", category: 'Affective Dysregulation', profiles: ['Depressive'], tags: ['ALL'], isCritical: true },
+                { id: 'ad26', text: "Do you feel a sense of impending disaster related to your health, finances, or relationships?", category: 'Affective Dysregulation', profiles: ['Anxiety'], tags: ['ALL'] },
+                { id: 'ad27', text: "Have you been feeling more defensive or quick to justify your actions?", category: 'Affective Dysregulation', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'ad28', text: "Do you feel a lack of emotional connection to your own goals?", category: 'Affective Dysregulation', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'ad29', text: "Are you experiencing nightmares or disturbing dreams more frequently?", category: 'Affective Dysregulation', profiles: ['Trauma', 'Anxiety'], tags: ['ALL'] },
+                { id: 'ad30', text: "Do you feel a sense of being 'on display' or judged by others?", category: 'Affective Dysregulation', profiles: ['Anxiety', 'Social Alienation'], tags: ['ALL'] },
+
+                // Cognitive & Attentional Distortions (30)
+                { id: 'cd01', text: "Have you caught yourself thinking that your past problems weren't 'that bad'?", category: 'Cognitive & Attentional Distortions', profiles: [], tags: ['ALL'] },
+                { id: 'cd02', text: "Have you found yourself mentally planning or creating 'rules' for how you might engage in your old [use/behavior] 'safely'?", category: 'Cognitive & Attentional Distortions', profiles: ['Impulsivity'], tags: ['ALL'], isCritical: true },
+                { id: 'cd03', text: "Has it been difficult to concentrate on tasks at work or at home?", category: 'Cognitive & Attentional Distortions', profiles: ['Depressive', 'Anxiety'], tags: ['ALL'] },
+                { id: 'cd04', text: "Do you find yourself replaying past events or conversations over and over in your mind?", category: 'Cognitive & Attentional Distortions', profiles: ['Anxiety'], tags: ['ALL'] },
+                { id: 'cd05', text: "Have you noticed yourself glamorizing the 'high' or the 'escape' associated with past [use/behavior]?", category: 'Cognitive & Attentional Distortions', profiles: [], tags: ['ALL'] },
+                { id: 'cd06', text: "Are you having trouble making decisions, even about simple things?", category: 'Cognitive & Attentional Distortions', profiles: ['Depressive', 'Anxiety'], tags: ['ALL'] },
+                { id: 'cd07', text: "Have you found your thoughts racing, making it hard to quiet your mind?", category: 'Cognitive & Attentional Distortions', profiles: ['Anxiety'], tags: ['Amphetamine', 'Cocaine'] },
+                { id: 'cd08', text: "Do you find yourself forgetting appointments, tasks, or conversations more often?", category: 'Cognitive & Attentional Distortions', profiles: [], tags: ['ALL'] },
+                { id: 'cd09', text: "Have you felt suspicious or paranoid about others' intentions?", category: 'Cognitive & Attentional Distortions', profiles: ['Social Alienation'], tags: ['Marijuana', 'Amphetamine', 'Cocaine'] },
+                { id: 'cd10', text: "Are you dwelling on past mistakes or perceived failures?", category: 'Cognitive & Attentional Distortions', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'cd11', text: "Have you been thinking 'what's the point?' about your recovery efforts?", category: 'Cognitive & Attentional Distortions', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'cd12', text: "Do you find yourself daydreaming about a 'quick fix' to your problems?", category: 'Cognitive & Attentional Distortions', profiles: ['Impulsivity'], tags: ['ALL'] },
+                { id: 'cd13', text: "Have you been more cynical or pessimistic in your thinking?", category: 'Cognitive & Attentional Distortions', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'cd14', text: "Do you feel like your mind is 'foggy' or unclear?", category: 'Cognitive & Attentional Distortions', profiles: [], tags: ['ALL'] },
+                { id: 'cd15', text: "Have you been blaming others for your problems or feelings?", category: 'Cognitive & Attentional Distortions', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'cd16', text: "Do you find it hard to focus on one thing at a time?", category: 'Cognitive & Attentional Distortions', profiles: ['Anxiety'], tags: ['ALL'] },
+                { id: 'cd17', text: "Have you had thoughts of being a 'failure' or 'imposter' in your recovery?", category: 'Cognitive & Attentional Distortions', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'cd18', text: "Are you mentally rehearsing arguments or confrontations?", category: 'Cognitive & Attentional Distortions', profiles: ['Anxiety', 'Social Alienation'], tags: ['ALL'] },
+                { id: 'cd19', text: "Have you been thinking that you are unique and the rules of recovery don't apply to you?", category: 'Cognitive & Attentional Distortions', profiles: [], tags: ['ALL'] },
+                { id: 'cd20', text: "Do you find yourself easily distracted from your goals?", category: 'Cognitive & Attentional Distortions', profiles: [], tags: ['ALL'] },
+                { id: 'cd21', text: "Have you been having intrusive thoughts or images related to past trauma?", category: 'Cognitive & Attentional Distortions', profiles: ['Trauma'], tags: ['ALL'] },
+                { id: 'cd22', text: "Do you believe that you need to be perfect in your recovery?", category: 'Cognitive & Attentional Distortions', profiles: ['Anxiety'], tags: ['ALL'] },
+                { id: 'cd23', text: "Have you been thinking about how much better things would be if you could just [use/behave] 'normally'?", category: 'Cognitive & Attentional Distortions', profiles: [], tags: ['ALL'] },
+                { id: 'cd24', text: "Are you finding it hard to remember the negative consequences of your past actions?", category: 'Cognitive & Attentional Distortions', profiles: [], tags: ['ALL'] },
+                { id: 'cd25', text: "Do you feel like you're on 'autopilot', just going through the motions?", category: 'Cognitive & Attentional Distortions', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'cd26', text: "Have you been having 'all-or-nothing' thoughts (e.g., 'I've already messed up, so I might as well go all the way')?", category: 'Cognitive & Attentional Distortions', profiles: ['Impulsivity'], tags: ['ALL'] },
+                { id: 'cd27', text: "Do you find yourself focusing on the perceived injustices done to you?", category: 'Cognitive & Attentional Distortions', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'cd28', text: "Have you been thinking that you 'deserve' a reward, and that reward is your old [use/behavior]?", category: 'Cognitive & Attentional Distortions', profiles: [], tags: ['ALL'] },
+                { id: 'cd29', text: "Is your internal self-talk more critical and harsh than usual?", category: 'Cognitive & Attentional Distortions', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'cd30', text: "Have you been fantasizing about disappearing or running away from your life?", category: 'Cognitive & Attentional Distortions', profiles: ['Depressive'], tags: ['ALL'] },
+
+                // Behavioral & Lifestyle Instability (30)
+                { id: 'bl01', text: "Have you noticed your sleep schedule becoming erratic, staying up much later or sleeping in more than usual?", category: 'Behavioral & Lifestyle Instability', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'bl02', text: "Are you letting chores, errands, or personal projects pile up more than usual?", category: 'Behavioral & Lifestyle Instability', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'bl03', text: "Have you been neglecting your physical appearance or personal hygiene more than usual?", category: 'Behavioral & Lifestyle Instability', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'bl04', text: "Have you found yourself making impulsive purchases that are outside your budget?", category: 'Behavioral & Lifestyle Instability', profiles: ['Impulsivity'], tags: ['Shopping', 'Gambling', 'Cocaine', 'Amphetamine'] },
+                { id: 'bl05', text: "Have you missed or been late to important appointments or commitments?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['ALL'] },
+                { id: 'bl06', text: "Are you eating more junk food or neglecting balanced meals?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['ALL'] },
+                { id: 'bl07', text: "Have you been driving more recklessly or taking other physical risks?", category: 'Behavioral & Lifestyle Instability', profiles: ['Impulsivity'], tags: ['ALL'] },
+                { id: 'bl08', text: "Is your living space becoming more cluttered or disorganized?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['ALL'] },
+                { id: 'bl09', text: "Have you been spending an excessive amount of time on your phone or computer, beyond what's necessary?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['Internet/Social Media', 'Gaming'] },
+                { id: 'bl10', text: "Have you abandoned a hobby or activity that was previously important to your recovery?", category: 'Behavioral & Lifestyle Instability', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'bl11', text: "Have you been chain-smoking or using more nicotine than usual?", category: 'Behavioral & Lifestyle Instability', profiles: ['Anxiety'], tags: ['Nicotine'] },
+                { id: 'bl12', text: "Are you isolating yourself physically, spending most of your time in one room?", category: 'Behavioral & Lifestyle Instability', profiles: ['Social Alienation', 'Depressive'], tags: ['ALL'] },
+                { id: 'bl13', text: "Have you been 'testing' yourself by going to high-risk places or situations?", category: 'Behavioral & Lifestyle Instability', profiles: ['Impulsivity'], tags: ['ALL'] },
+                { id: 'bl14', text: "Are you neglecting to take prescribed medications as directed?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['ALL'] },
+                { id: 'bl15', text: "Have you been starting arguments or conflicts for no clear reason?", category: 'Behavioral & Lifestyle Instability', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'bl16', text: "Are you finding it hard to stick to a budget or manage your finances?", category: 'Behavioral & Lifestyle Instability', profiles: ['Impulsivity'], tags: ['ALL'] },
+                { id: 'bl17', text: "Have you been working excessively, to the point of burnout?", category: 'Behavioral & Lifestyle Instability', profiles: ['Anxiety'], tags: ['ALL'] },
+                { id: 'bl18', text: "Are you engaging in more secretive behavior?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['ALL'] },
+                { id: 'bl19', text: "Have you stopped exercising or engaging in physical activity?", category: 'Behavioral & Lifestyle Instability', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'bl20', text: "Are you finding yourself drawn to media (movies, music) that glorifies your past [use/behavior]?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['ALL'] },
+                { id: 'bl21', text: "Have you been 'losing time' while gaming or on the internet?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['Gaming', 'Internet/Social Media'] },
+                { id: 'bl22', text: "Are you checking your phone for notifications more compulsively?", category: 'Behavioral & Lifestyle Instability', profiles: ['Anxiety'], tags: ['Internet/Social Media'] },
+                { id: 'bl23', text: "Have you been making excuses to have alcohol in the house 'for guests'?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['Alcohol'] },
+                { id: 'bl24', text: "Are you neglecting your spiritual or mindfulness practices?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['ALL'] },
+                { id: 'bl25', text: "Have you been seeking out situations where your old [use/behavior] is likely to occur?", category: 'Behavioral & Lifestyle Instability', profiles: ['Impulsivity'], tags: ['ALL'], isCritical: true },
+                { id: 'bl26', text: "Are you finding it hard to say 'no' to invitations or requests that compromise your recovery?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['ALL'] },
+                { id: 'bl27', text: "Have you been putting yourself in financially precarious situations?", category: 'Behavioral & Lifestyle Instability', profiles: ['Impulsivity'], tags: ['Gambling', 'Shopping'] },
+                { id: 'bl28', text: "Are you finding yourself more accident-prone or clumsy?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['ALL'] },
+                { id: 'bl29', text: "Have you been lying about your whereabouts or activities?", category: 'Behavioral & Lifestyle Instability', profiles: [], tags: ['ALL'] },
+                { id: 'bl30', text: "Are you finding it difficult to maintain eye contact with people?", category: 'Behavioral & Lifestyle Instability', profiles: ['Social Alienation'], tags: ['ALL'] },
+
+                // Interpersonal & Social Functioning (30)
+                { id: 'is01', text: "Have you been avoiding calls or messages from supportive friends or family?", category: 'Interpersonal & Social Functioning', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'is02', text: "Have you re-established contact with individuals you associate with your past [use/behavior]?", category: 'Interpersonal & Social Functioning', profiles: ['Social Alienation'], tags: ['ALL'], isCritical: true },
+                { id: 'is03', text: "I have never been irritated by a friend's habits.", category: 'Interpersonal & Social Functioning', profiles: [], tags: ['ALL'], isValidation: true, v_score: 1 },
+                { id: 'is04', text: "Do you feel like you have to put on a 'mask' or pretend you're doing better than you are around others?", category: 'Interpersonal & Social Functioning', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'is05', text: "Have you found yourself getting into more arguments or disagreements lately?", category: 'Interpersonal & Social Functioning', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'is06', text: "Do you feel lonely, even when you are with other people?", category: 'Interpersonal & Social Functioning', profiles: ['Social Alienation', 'Depressive'], tags: ['ALL'] },
+                { id: 'is07', text: "Have you been canceling or making excuses to get out of social plans?", category: 'Interpersonal & Social Functioning', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'is08', text: "Do you feel that no one really understands what you're going through?", category: 'Interpersonal & Social Functioning', profiles: ['Social Alienation'], tags: ['ALL'] },
+                { id: 'is09', text: "Have you been lying or being dishonest, even about small things?", category: 'Interpersonal & Social Functioning', profiles: [], tags: ['ALL'] },
+                { id: 'is10', text: "Are you finding it difficult to ask for help when you need it?", category: 'Interpersonal & Social Functioning', profiles: [], tags: ['ALL'] },
+                // ... (20 more questions)
+
+                // Physiological & Somatic Complaints (20)
+                { id: 'ps01', text: "Have you been feeling physically 'off' or run-down without a clear reason?", category: 'Physiological & Somatic Complaints', profiles: ['Anxiety', 'Depressive'], tags: ['ALL'] },
+                { id: 'ps02', text: "Have you noticed an increase in headaches or muscle tension?", category: 'Physiological & Somatic Complaints', profiles: ['Anxiety'], tags: ['ALL'] },
+                { id: 'ps03', text: "Have there been significant changes in your appetite or weight?", category: 'Physiological & Somatic Complaints', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 'ps04', text: "Are you experiencing digestive issues like stomach aches or nausea more frequently?", category: 'Physiological & Somatic Complaints', profiles: ['Anxiety'], tags: ['ALL'] },
+                { id: 'ps05', text: "Do you feel tired and groggy, even after a full night's sleep?", category: 'Physiological & Somatic Complaints', profiles: ['Depressive'], tags: ['ALL'] },
+                // ... (15 more questions)
+
+                // Recovery Engagement & Motivation (20)
+                { id: 're01', text: "Have you started to feel that a life in recovery is less appealing than it once was?", category: 'Recovery Engagement & Motivation', profiles: ['Depressive'], tags: ['ALL'] },
+                { id: 're02', text: "Have you been questioning the effectiveness of your support group, therapist, or recovery plan?", category: 'Recovery Engagement & Motivation', profiles: [], tags: ['ALL'] },
+                { id: 're03', text: "I always feel motivated to work on my recovery.", category: 'Recovery Engagement & Motivation', profiles: [], tags: ['ALL'], isValidation: true, v_score: 1 },
+                { id: 're04', text: "Have you been skipping or feeling reluctant to attend meetings or therapy sessions?", category: 'Recovery Engagement & Motivation', profiles: [], tags: ['ALL'] },
+                { id: 're05', text: "Do you find yourself comparing your recovery journey unfavorably to others'?", category: 'Recovery Engagement & Motivation', profiles: [], tags: ['ALL'] },
+                // ... (15 more questions)
+
+                // Cravings & Impulse Control (20)
+                { id: 'ci01', text: "Have you noticed an increase in physical 'rituals' related to past use, even when you don't intend to use?", category: 'Cravings & Impulse Control', profiles: [], tags: ['ALL'] },
+                { id: 'ci02', text: "When an urge appears, does the 'mental debate' about giving in last longer than it used to?", category: 'Cravings & Impulse Control', profiles: ['Impulsivity'], tags: ['ALL'] },
+                { id: 'ci03', text: "Have you found yourself in high-risk situations without a clear plan to stay safe?", category: 'Cravings & Impulse Control', profiles: ['Impulsivity'], tags: ['ALL'] },
+                { id: 'ci04', text: "Do cravings feel more intense or physically noticeable than before?", category: 'Cravings & Impulse Control', profiles: [], tags: ['ALL'] },
+                { id: 'ci05', text: "Have you felt a sense of 'giving up' or helplessness when an urge hits?", category: 'Cravings & Impulse Control', profiles: ['Depressive'], tags: ['ALL'] },
+                // ... (15 more questions)
+
+                // Substance/Behavior-Specific Patterns (20)
+                { id: 'sb01', text: "Have you been spending more time looking at content online related to gambling or betting odds?", category: 'Substance/Behavior-Specific Patterns', profiles: ['Impulsivity'], tags: ['Gambling'] },
+                { id: 'sb02', text: "Have you found yourself browsing online stores or adding items to a cart without buying, just for the feeling it gives you?", category: 'Substance/Behavior-Specific Patterns', profiles: ['Impulsivity'], tags: ['Shopping'] },
+                { id: 'sb03', text: "Have you felt a strong urge to check your phone or social media immediately after a stressful moment?", category: 'Substance/Behavior-Specific Patterns', profiles: ['Anxiety'], tags: ['Internet/Social Media'] },
+                { id: 'sb04', text: "Have you noticed yourself thinking about the specific physical sensation of a drink (e.g., the burn, the coldness)?", category: 'Substance/Behavior-Specific Patterns', profiles: [], tags: ['Alcohol'] },
+                { id: 'sb05', text: "Have you been thinking about the 'rush' or initial feeling from using stimulants?", category: 'Substance/Behavior-Specific Patterns', profiles: ['Impulsivity'], tags: ['Amphetamine', 'Methamphetamine', 'Cocaine'] },
+                // ... (15 more questions)
+            ];
+
+            const coreQuestions = [
+                { id: 'c01', text: 'What is your age?', type: 'number', required: true },
+                { id: 'c02', text: 'How would you describe your current living situation?', type: 'select', options: ['Living alone', 'With partner/family (supportive)', 'With partner/family (unsupportive)', 'With roommates', 'Sober living/group home', 'Unstable/transitional'], required: true },
+                { id: 'c03', text: 'At what age did the behavior(s) you are concerned about first become a significant issue?', type: 'number', required: true },
+                { id: 'c04', text: 'How long have you been actively trying to change this pattern?', type: 'text', placeholder: 'e.g., 6 months, 2 years', required: true },
+                { id: 'c05', text: 'What is your primary motivation for change right now?', type: 'text', placeholder: 'e.g., My health, my family, my job', required: true },
+            ];
+            
+            // --- Render Functions ---
+            function render() {
+                const screen = userState.currentScreen;
+                const mainContainer = document.getElementById('mainContainer');
+                mainContainer.innerHTML = ''; 
+                
+                if (screen === 'intro') mainContainer.innerHTML = getIntroHTML();
+                if (screen === 'addictionSelection') mainContainer.innerHTML = getAddictionSelectionHTML();
+                if (screen === 'coreQuestions') mainContainer.innerHTML = getCoreQuestionsHTML();
+                if (screen === 'assessment') mainContainer.innerHTML = getAssessmentHTML();
+                if (screen === 'reportSelection') mainContainer.innerHTML = getReportSelectionHTML();
+
+                addEventListeners();
+            }
+
+            function getIntroHTML() {
+                return `<div id="introScreen" class="text-center fade-in"><div class="glass-ui p-8">...</div></div>`.replace('...', `
+                    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">Advanced Relapse Prevention Assessment</h1>
+                    <p class="mt-4 text-lg text-slate-700">A comprehensive tool for a deeper understanding of your recovery journey.</p>
+                    <div class="mt-8 text-left bg-white/50 p-6 rounded-xl">
+                        <h2 class="text-xl font-semibold text-slate-800 mb-3">How to Use This Assessment</h2>
+                        <ul class="space-y-3 text-slate-600 list-disc list-inside">
+                            <li>This is an in-depth assessment. Please set aside 15-20 minutes in a private, calm space.</li>
+                            <li>The process involves three steps: selecting your areas of concern, answering some background questions, and then completing the main assessment.</li>
+                            <li>Answer based on your experiences over the <strong>past 30 days</strong>. Honesty is crucial for an accurate and helpful report.</li>
+                        </ul>
+                    </div>
+                    <button id="startBtn" class="btn mt-8 w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-12 rounded-lg shadow-lg hover:bg-blue-700">Begin Assessment</button>
+                `);
+            }
+
+            function getAddictionSelectionHTML() {
+                const content = `
+                    <h2 class="text-2xl font-bold text-center text-slate-800 mb-2">Areas of Concern</h2>
+                    <p class="text-center text-slate-600 mb-6">Please select all substances or behaviors that are relevant to your recovery journey.</p>
+                    <div id="addictionList" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                        ${Object.keys(ADDICTIONS).map(name => `
+                            <div>
+                                <input type="checkbox" id="addiction_${name}" value="${name}" class="addiction-checkbox" ${userState.selectedAddictions.includes(name) ? 'checked' : ''}>
+                                <label for="addiction_${name}" class="block text-center font-medium py-3 px-2 rounded-lg text-sm">${name.replace(/_/g, ' ')}</label>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <p id="addictionSelectionError" class="text-red-500 text-center h-4 mb-4"></p>
+                    <div class="text-center">
+                        <button id="addictionSelectContinueBtn" class="btn w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-12 rounded-lg shadow-md hover:bg-blue-700">Continue</button>
+                    </div>`;
+                return `<div class="glass-ui p-8 fade-in">${content}</div>`;
+            }
+            
+            function getCoreQuestionsHTML() {
+                const content = `
+                    <h2 class="text-2xl font-bold text-center text-slate-800 mb-6">Background Information</h2>
+                    <div id="coreQuestionsContainer" class="space-y-6">
+                        ${coreQuestions.map(q => {
+                            let inputHtml = '';
+                            const questionText = q.text.replace('[use/behavior]', userState.selectedAddictions[0] || 'behavior');
+                            const value = userState.coreAnswers[q.id] || '';
+                            if (q.type === 'text' || q.type === 'number') {
+                                inputHtml = `<input type="${q.type}" id="${q.id}" value="${value}" placeholder="${q.placeholder || ''}" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm bg-white/80 focus:ring-blue-500 focus:border-blue-500">`;
+                            } else if (q.type === 'select') {
+                                inputHtml = `<select id="${q.id}" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm bg-white/80 focus:ring-blue-500 focus:border-blue-500"><option value="">Select...</option>${q.options.map(o => `<option value="${o}" ${value === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
+                            }
+                            return `<div><label for="${q.id}" class="block text-sm font-medium text-slate-700">${questionText}</label>${inputHtml}</div>`;
+                        }).join('')}
+                    </div>
+                    <p id="coreQuestionsError" class="text-red-500 text-center h-4 mt-4"></p>
+                    <div class="text-center mt-8">
+                        <button id="coreQuestionsContinueBtn" class="btn w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-12 rounded-lg shadow-md hover:bg-blue-700">Start Main Assessment</button>
+                    </div>`;
+                return `<div class="glass-ui p-8 fade-in">${content}</div>`;
+            }
+
+            function getAssessmentHTML() {
+                const q = userState.dynamicQuestionSet[userState.currentQuestionIndex];
+                if (!q) return '<div>Assessment complete or error.</div>';
+                let questionText = q.text.replace(/\[use\/behavior\]/g, ADDICTIONS[userState.selectedAddictions[0]].type === 'substance' ? 'substance use' : 'behavior');
+                
+                const progressHTML = `<div class="mb-6">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-base font-medium text-slate-700">Assessment Progress</span>
+                        <span id="progressText" class="text-sm font-medium text-slate-700">Question ${userState.currentQuestionIndex + 1} / ${userState.dynamicQuestionSet.length}</span>
+                    </div>
+                    <div class="w-full bg-slate-200/70 rounded-full h-2.5"><div id="progressBar" class="bg-blue-600 h-2.5 rounded-full progress-bar-fill" style="width: ${((userState.currentQuestionIndex + 1) / userState.dynamicQuestionSet.length) * 100}%"></div></div>
+                </div>`;
+
+                const questionHTML = `<div id="questionContainer" class="glass-ui p-6 sm:p-8">
+                    <p class="font-semibold text-slate-800 mb-6 text-lg text-center">${questionText}</p>
+                    <div class="grid grid-cols-4 md:grid-cols-8 gap-2">
+                        ${[...Array(8).keys()].map(i => `
+                            <div>
+                                <input type="radio" id="likert_${i+1}" name="likert" value="${i+1}" class="likert-radio sr-only" ${userState.mainAnswers[q.id] == (i+1) ? 'checked' : ''}>
+                                <label for="likert_${i+1}" class="likert-label">${i+1}</label>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-600 mt-2 px-1">
+                        <span>Not at all true</span>
+                        <span>Constantly true</span>
+                    </div>
+                </div>`;
+
+                const navHTML = `<div class="mt-8 flex justify-between items-center">
+                    <button id="backBtn" class="btn bg-white/50 text-slate-700 font-bold py-2 px-6 rounded-lg hover:bg-white/80" ${userState.currentQuestionIndex === 0 ? 'style="visibility: hidden;"' : ''}>Back</button>
+                </div>`;
+                
+                return `<div class="fade-in">${progressHTML}${questionHTML}${navHTML}</div>`;
+            }
+            
+            function getReportSelectionHTML() {
+                const content = `
+                    <h2 class="text-3xl font-bold text-slate-900 mb-2">Assessment Complete</h2>
+                    <p class="text-lg text-slate-600 mb-8">Choose the report you would like to view.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <button id="viewPatientReportBtn" class="btn w-full bg-green-600 text-white font-bold py-4 px-6 rounded-lg hover:bg-green-700">My Report</button>
+                        <button id="viewClinicianReportBtn" class="btn w-full bg-sky-600 text-white font-bold py-4 px-6 rounded-lg hover:bg-sky-700">Clinician's Report</button>
+                    </div>`;
+                return `<div class="glass-ui p-8 fade-in">${content}</div>`;
+            }
+
+            function addEventListeners() {
+                const screen = userState.currentScreen;
+                if (screen === 'intro') {
+                    document.getElementById('startBtn').addEventListener('click', () => {
+                        userState.currentScreen = 'addictionSelection';
+                        render();
+                    });
+                }
+                if (screen === 'addictionSelection') {
+                    document.getElementById('addictionSelectContinueBtn').addEventListener('click', showCoreQuestions);
+                    document.querySelectorAll('.addiction-checkbox').forEach(cb => cb.addEventListener('change', handleAddictionSelection));
+                }
+                if (screen === 'coreQuestions') {
+                    document.getElementById('coreQuestionsContinueBtn').addEventListener('click', startAssessment);
+                }
+                if (screen === 'assessment') {
+                    document.getElementById('backBtn').addEventListener('click', handleBack);
+                    document.querySelectorAll('.likert-radio').forEach(radio => radio.addEventListener('change', (e) => {
+                        const qId = userState.dynamicQuestionSet[userState.currentQuestionIndex].id;
+                        userState.mainAnswers[qId] = parseInt(e.target.value, 10);
+                        setTimeout(handleNext, 250);
+                    }));
+                }
+                if (screen === 'reportSelection') {
+                    document.getElementById('viewPatientReportBtn').addEventListener('click', () => generateReport('patient'));
+                    document.getElementById('viewClinicianReportBtn').addEventListener('click', () => generateReport('clinician'));
+                    updateDevBar(true);
+                } else {
+                    updateDevBar(false);
+                }
+            }
+            
+            function setupDevBar() {
+                const devSubstancesDropdown = document.getElementById('devSubstancesDropdown');
+                devSubstancesDropdown.innerHTML = Object.keys(ADDICTIONS).map(name => `
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" value="${name}" class="dev-substance-cb rounded">
+                        <span>${name}</span>
+                    </label>
+                `).join('');
+
+                const devRiskDropdown = document.getElementById('devRisk');
+                const riskLabels = [
+                    "1. Stable Recovery", "2. Minor Stressors", "3. Early Warnings", "4. Moderate Risk", "5. Ambivalence",
+                    "6. High Risk", "7. Disengaging", "8. Pre-Relapse", "9. Severe Risk", "10. Relapse Imminent"
+                ];
+                devRiskDropdown.innerHTML = `<option value="">Select Risk...</option>` + riskLabels.map((label, i) => `<option value="${i+1}">${label}</option>`).join('');
+
+                const devSubstancesBtn = document.getElementById('devSubstancesBtn');
+                devSubstancesBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    devSubstancesDropdown.style.display = devSubstancesDropdown.style.display === 'block' ? 'none' : 'block';
+                });
+                
+                document.addEventListener('click', (e) => {
+                    if (!devSubstancesBtn.contains(e.target)) {
+                        devSubstancesDropdown.style.display = 'none';
+                    }
+                });
+
+                document.getElementById('devFillBtn').addEventListener('click', devFillData);
+                document.getElementById('devResetBtn').addEventListener('click', goHome);
+                document.getElementById('devSubmitBtn').addEventListener('click', devSubmit);
+                document.getElementById('devSkipBtn').addEventListener('click', devSkipToEnd);
+                document.getElementById('devDownloadBtn').addEventListener('click', devDownloadData);
+                document.getElementById('devGenPatientBtn').addEventListener('click', () => generateReport('patient'));
+                document.getElementById('devGenClinicianBtn').addEventListener('click', () => generateReport('clinician'));
+            }
+
+            function updateDevBar(isComplete) {
+                document.getElementById('devGenPatientBtn').disabled = !isComplete;
+                document.getElementById('devGenClinicianBtn').disabled = !isComplete;
+            }
+
+            function devFillData() {
+                const selectedSubstances = Array.from(document.querySelectorAll('.dev-substance-cb:checked')).map(cb => cb.value);
+                if (selectedSubstances.length === 0) { alert("Please select at least one substance from the dev bar dropdown."); return; }
+                userState.selectedAddictions = selectedSubstances;
+                
+                const ageMap = { '18-25': '22', '26-35': '30', '36-50': '42', '51+': '55' };
+                userState.coreAnswers['c01'] = ageMap[document.getElementById('devAge').value] || '30';
+                userState.coreAnswers['c02'] = 'With partner/family (supportive)';
+                userState.coreAnswers['c03'] = '18';
+                userState.coreAnswers['c04'] = '1 year';
+                userState.coreAnswers['c05'] = 'For my health';
+
+                userState.dynamicQuestionSet = generateDynamicQuestionSet(userState.selectedAddictions);
+
+                const risk = parseInt(document.getElementById('devRisk').value, 10);
+                if (!risk) { alert("Please select a risk level."); return; }
+                
+                userState.dynamicQuestionSet.forEach(q => {
+                    let score;
+                    const baseScore = Math.ceil(risk / 1.25); 
+                    const randomOffset = Math.floor(Math.random() * 3) - 1; 
+                    score = baseScore + randomOffset;
+                    
+                    if (q.isCritical && risk >= 8) {
+                        score = Math.floor(Math.random() * 2) + 7;
+                    } else if (q.isCritical && risk < 8) {
+                        score = Math.floor(Math.random() * 3) + 1;
+                    }
+                    
+                    userState.mainAnswers[q.id] = Math.max(1, Math.min(8, score));
+                });
+
+                userState.currentScreen = 'assessment';
+                userState.currentQuestionIndex = 0;
+                render();
+            }
+
+            function devSubmit() {
+                if (userState.dynamicQuestionSet.length === 0) {
+                    alert("Please start an assessment first by using 'Fill & Start'."); 
+                    return; 
+                }
+                userState.dynamicQuestionSet.forEach(q => {
+                    if (!userState.mainAnswers[q.id]) {
+                        userState.mainAnswers[q.id] = 4;
+                    }
+                });
+                calculateResults();
+                userState.currentScreen = 'reportSelection';
+                render();
+            }
+
+            function devSkipToEnd() {
+                devFillData();
+                devSubmit();
+            }
+            
+            function devDownloadData() {
+                if (userState.dynamicQuestionSet.length === 0) {
+                    alert("Please complete an assessment first to generate data.");
+                    return;
+                }
+                const doc = new jsPDF();
+                doc.setFontSize(12);
+                doc.text("Assessment Questions & Answers", 105, 15, { align: 'center' });
+                doc.setFontSize(8);
+                doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, 20, { align: 'center' });
+
+                let y = 30;
+                userState.dynamicQuestionSet.forEach((q, index) => {
+                    if (y > 280) {
+                        doc.addPage();
+                        y = 15;
+                    }
+                    const questionText = q.text.replace(/\[use\/behavior\]/g, ADDICTIONS[userState.selectedAddictions[0]].type === 'substance' ? 'substance use' : 'behavior');
+                    const answer = userState.mainAnswers[q.id] || "Not Answered";
+                    doc.setFontSize(10);
+                    doc.text(`${index + 1}. ${questionText}`, 10, y);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`Answer: ${answer}`, 15, y + 5);
+                    doc.setFont(undefined, 'normal');
+                    y += 15;
+                });
+
+                doc.save(`assessment-Q&A-${Date.now()}.pdf`);
+            }
+
+            // --- Core Logic ---
+            function handleAddictionSelection(event) {
+                const { value, checked } = event.target;
+                if (checked) { userState.selectedAddictions.push(value); } 
+                else { userState.selectedAddictions = userState.selectedAddictions.filter(d => d !== value); }
+            }
+
+            function showCoreQuestions() {
+                if (userState.selectedAddictions.length === 0) {
+                    document.getElementById('addictionSelectionError').textContent = 'Please select at least one area of concern.';
+                    return;
+                }
+                userState.currentScreen = 'coreQuestions';
+                render();
+            }
+
+            function startAssessment() {
+                let allCoreAnswered = true;
+                coreQuestions.forEach(q => {
+                    const el = document.getElementById(q.id);
+                    if (q.required && !el.value) {
+                        allCoreAnswered = false;
+                        el.classList.add('border-red-500');
+                    } else {
+                        el.classList.remove('border-red-500');
+                        userState.coreAnswers[q.id] = el.value;
+                    }
+                });
+                if (!allCoreAnswered) {
+                    document.getElementById('coreQuestionsError').textContent = 'Please answer all background questions.';
+                    return;
+                }
+                userState.dynamicQuestionSet = generateDynamicQuestionSet(userState.selectedAddictions); 
+                userState.currentScreen = 'assessment';
+                userState.currentQuestionIndex = 0;
+                render();
+            }
+            
+            function generateDynamicQuestionSet(selectedAddictions) {
+                const targetCount = 100;
+                let finalQuestionSet = [];
+                let pool = fullQuestionBank.filter(q => 
+                    q.tags.includes('ALL') || q.tags.some(tag => selectedAddictions.includes(tag))
+                );
+
+                const questionsByCategory = {};
+                pool.forEach(q => {
+                    if (!questionsByCategory[q.category]) {
+                        questionsByCategory[q.category] = [];
+                    }
+                    questionsByCategory[q.category].push(q);
+                });
+
+                const categories = Object.keys(questionsByCategory);
+                let categoryIndex = 0;
+                while (finalQuestionSet.length < targetCount && pool.length > 0) {
+                    const currentCategory = categories[categoryIndex % categories.length];
+                    if (questionsByCategory[currentCategory] && questionsByCategory[currentCategory].length > 0) {
+                        const questionIndex = Math.floor(Math.random() * questionsByCategory[currentCategory].length);
+                        const selectedQuestion = questionsByCategory[currentCategory].splice(questionIndex, 1)[0];
+                        
+                        if (!finalQuestionSet.some(q => q.id === selectedQuestion.id)) {
+                            finalQuestionSet.push(selectedQuestion);
+                            pool = pool.filter(p => p.id !== selectedQuestion.id);
+                        }
+                    }
+                    categoryIndex++;
+                    if (categoryIndex > 2000) break; // Safety break
+                }
+                
+                for (let i = finalQuestionSet.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [finalQuestionSet[i], finalQuestionSet[j]] = [finalQuestionSet[j], finalQuestionSet[i]];
+                }
+
+                return finalQuestionSet.slice(0, targetCount);
+            }
+
+            function handleNext() {
+                const currentQId = userState.dynamicQuestionSet[userState.currentQuestionIndex].id;
+                if (!userState.mainAnswers[currentQId]) return;
+                if (userState.currentQuestionIndex < userState.dynamicQuestionSet.length - 1) {
+                    userState.currentQuestionIndex++;
+                } else {
+                    calculateResults();
+                    userState.currentScreen = 'reportSelection';
+                }
+                render();
+            }
+
+            function handleBack() {
+                if (userState.currentQuestionIndex > 0) {
+                    userState.currentQuestionIndex--;
+                    render();
+                }
+            }
+            
+            function calculateResults() {
+                let totalScore = 0, validityScore = 0, criticalFlags = [];
+                const domainScores = {};
+                const profileScores = { 'Depressive': {score:0, count:0}, 'Anxiety': {score:0, count:0}, 'Impulsivity': {score:0, count:0}, 'Social Alienation': {score:0, count:0} };
+                
+                userState.dynamicQuestionSet.forEach(q => {
+                    const answer = userState.mainAnswers[q.id] || 0;
+                    if (q.isValidation) { if (answer > 4) validityScore += q.v_score; } 
+                    else {
+                        if (!domainScores[q.category]) domainScores[q.category] = { score: 0, count: 0 };
+                        domainScores[q.category].score += answer;
+                        domainScores[q.category].count++;
+                        totalScore += answer;
+                        if (q.isCritical && answer > 5) criticalFlags.push(q.text);
+                        (q.profiles || []).forEach(p => {
+                            if (profileScores[p]) {
+                                profileScores[pkey
+								].score += answer;
+                                profileScores[p].count++;
+                            }
+                        });
+                    }
+                });
+                const finalRiskIndex = (totalScore / (userState.dynamicQuestionSet.filter(q=>!q.isValidation).length * 8)) * 100;
+                const processedDomainScores = Object.entries(domainScores).map(([category, data]) => ({ category, score: (data.score / (data.count * 8)) * 100 }));
+                const processedProfileScores = Object.entries(profileScores).map(([profile, data]) => ({ profile, score: data.count > 0 ? (data.score / (data.count * 8)) * 100 : 0 }));
+                let reliability = "High";
+                if (validityScore > 1) reliability = "Low (potential exaggeration or misunderstanding)";
+                else if (validityScore < -1) reliability = "Low (potential minimization)";
+                userState.results = { riskIndex: finalRiskIndex, criticalFlags, domainScores: processedDomainScores, profileScores: processedProfileScores, reliability };
+            }
+
+            async function generateReport(type) {
+                const loadingModal = document.getElementById('loadingModal');
+                loadingModal.innerHTML = `<div class="relative top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-5 border w-96 shadow-lg rounded-md bg-white text-center">
+                    <div class="flex justify-center mb-4"><div class="spinner"></div></div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Generating Your Report...</h3>
+                    <p class="text-sm text-gray-500 mt-2">This may take a moment. We're analyzing your responses to create a detailed and personalized report.</p>
+                </div>`;
+                loadingModal.classList.remove('hidden');
+                
+                const prompt = createGeminiPrompt(type);
+                let generatedText = "Error generating report. Please try again.";
+
+                try {
+                    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                    const apiKey = "AIzaSyDldU64ylgeEZWNBS_iTCG43tO5HgnR95g"; 
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                    
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts[0].text) {
+                        generatedText = result.candidates[0].content.parts[0].text;
+                    } else {
+                        throw new Error("No valid content in API response.");
+                    }
+                } catch (error) {
+                    console.error("Gemini API Error:", error);
+                    generatedText = `There was an error generating the report. Technical details: ${error.message}`;
+                } finally {
+                    loadingModal.classList.add('hidden');
+                    renderReport(type, generatedText);
+                }
+            }
+            
+            function createGeminiPrompt(type) {
+                const { riskIndex, criticalFlags, domainScores, profileScores, reliability } = userState.results;
+                const substanceList = userState.selectedAddictions.join(', ');
+                const coreInfo = JSON.stringify(userState.coreAnswers);
+                const fullResponseTranscript = userState.dynamicQuestionSet.map(q => {
+                    const answer = userState.mainAnswers[q.id] || "N/A";
+                    return `Q: ${q.text}\nA: ${answer}`;
+                }).join('\n');
+
+                if (type === 'patient') {
+                    return `You are a direct but compassionate recovery coach. Write a patient-friendly report based on this data. Avoid vague "wellness" language. Use clear, actionable language and structure with markdown. Reference specific answers from the transcript to make your points more concrete.
+                    **Data Summary:**
+                    - Primary Concerns: ${substanceList}
+                    - Overall Risk Index: ${Math.round(riskIndex)}
+                    - Top 3 Highest Risk Domains: ${domainScores.sort((a,b) => b.score - a.score).slice(0,3).map(d => d.category).join(', ')}
+                    - Top 3 Lowest Risk Domains: ${domainScores.sort((a,b) => a.score - b.score).slice(0,3).map(d => d.category).join(', ')}
+
+                    **Full Transcript:**
+                    ${fullResponseTranscript}
+
+                    **Instructions:**
+                    1.  Start with a direct but supportive opening.
+                    2.  Use the heading "### Your Current Situation" to explain the Risk Index as a measure of current relapse risk.
+                    3.  Use the heading "### Areas of Strength" to describe the lowest-scoring domains as areas where their current strategies are working well.
+                    4.  Use the heading "### Areas That Need Attention" to describe the highest-scoring domains. Explain what this means in practical terms.
+                    5.  Use the heading "### Actionable First Steps". For each high-risk domain, provide one concrete, simple action they can take this week. Example: For 'Interpersonal Functioning', suggest "You mentioned avoiding calls from family. This week, try sending one supportive person a simple text message to reconnect."
+                    6.  End with an encouraging but realistic closing statement about the value of this awareness.`;
+                } else { // clinician
+                    return `You are a clinical expert in addiction. Generate a detailed, technical report for a clinician. Use precise terminology and markdown headings (###), bolding (**), and bullet points (-). Refer to specific answers in the transcript to support your analysis.
+                    **Data Summary:**
+                    - Concerns: ${substanceList}
+                    - Core Data: ${coreInfo}
+                    - Risk Index: ${Math.round(riskIndex)}
+                    - Reliability: ${reliability}
+                    - Critical Flags: ${criticalFlags.length > 0 ? criticalFlags.join('; ') : 'None'}
+                    - Main Domain Scores: ${domainScores.map(d => `${d.category}: ${Math.round(d.score)}%`).join(', ')}
+                    - Secondary Profile Scores: ${profileScores.map(p => `${p.profile}: ${Math.round(p.score)}%`).join(', ')}
+
+                    **Full Transcript:**
+                    ${fullResponseTranscript}
+
+                    **Instructions:**
+                    1.  **### Clinical Summary**: A concise paragraph summarizing the patient's presentation, integrating the Risk Index and primary concerns.
+                    2.  **### Secondary Profile Analysis**: Detail the highest-scoring secondary profiles (Depressive, Anxiety, etc.). Explain the clinical implications and how they might interact.
+                    3.  **### Critical Flags**: If they exist, list them and analyze their significance as immediate relapse predictors.
+                    4.  **### Primary Domain Analysis**: Briefly analyze the 2-3 highest-scoring primary domains, referencing a key answer from the transcript for each.
+                    5.  **### Response Validity**: Comment on the 'Response Reliability' and its clinical implications.
+                    6.  **### Recommendations**: Provide 3-5 bulleted, actionable clinical recommendations.`;
+                }
+            }
+
+            function renderReport(type, generatedText) {
+                const { riskIndex, domainScores } = userState.results;
+                let riskColor = riskIndex > 75 ? 'red' : riskIndex > 50 ? 'orange' : riskIndex > 25 ? 'yellow' : 'green';
+                let headerHTML = '';
+                const reportContainer = document.getElementById('reportContainer');
+                const mainContainer = document.getElementById('mainContainer');
+                const otherReportType = type === 'patient' ? 'clinician' : 'patient';
+
+                const buttonsHTML = `
+                    <div class="flex gap-4 mt-8">
+                        <button onclick="window.downloadReportPDF()" class="btn bg-gray-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-700">Download Report PDF</button>
+                        <button onclick="window.switchReportView('${otherReportType}')" class="btn bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700">Switch to ${otherReportType.charAt(0).toUpperCase() + otherReportType.slice(1)} View</button>
+                    </div>`;
+
+                if (type === 'patient') {
+                     headerHTML = `<div class="p-4 sm:p-8 glass-ui" id="reportContent">
+                        <div class="flex justify-between items-center mb-8">
+                           <h1 class="text-3xl font-bold text-slate-900">My Recovery Check-In</h1>
+                           <button onclick="goHome()" class="btn bg-white/50 text-slate-700 font-bold py-2 px-6 rounded-lg hover:bg-white/80">Start Over</button>
+                        </div>
+                        <div class="bg-slate-100/70 p-6 rounded-xl text-center mb-8">
+                            <p class="text-lg text-slate-600">Overall Risk Index</p>
+                            <p class="text-6xl font-extrabold text-${riskColor}-600">${Math.round(riskIndex)}</p>
+                            <p class="mt-2 text-slate-500">A snapshot of your current relapse risk. Higher scores indicate more warning signs.</p>
+                        </div>
+                        <div class="prose max-w-none">${generatedText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/### (.*?)<br>/g, '<h3 class="text-xl font-semibold mt-6 mb-2">$1</h3>').replace(/^- (.*?)<br>/g, '<li class="ml-4 list-disc">$1</li>')}</div>
+                     </div>`;
+                } else { // clinician
+                    headerHTML = `<div class="p-4 sm:p-8 glass-ui" id="reportContent">
+                        <div class="flex justify-between items-center mb-8">
+                           <h1 class="text-3xl font-bold text-slate-900">Clinical Report</h1>
+                           <button onclick="goHome()" class="btn bg-white/50 text-slate-700 font-bold py-2 px-6 rounded-lg hover:bg-white/80">Start Over</button>
+                        </div>
+                        <div class="bg-white/70 p-6 rounded-xl shadow-sm border mb-8">
+                            <h2 class="text-xl font-semibold text-slate-800 mb-4">Risk Profile by Domain</h2>
+                            <canvas id="domainChart"></canvas>
+                        </div>
+                        <div class="prose max-w-none">${generatedText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/### (.*?)<br>/g, '<h3 class="text-xl font-semibold mt-6 mb-2">$1</h3>').replace(/^- (.*?)<br>/g, '<li class="ml-4 list-disc">$1</li>')}</div>
+                    </div>`;
+                }
+                
+                reportContainer.innerHTML = `<div class="max-w-4xl mx-auto p-4 sm:p-8">${headerHTML}${buttonsHTML}</div>`;
+                
+                mainContainer.classList.add('hidden');
+                reportContainer.classList.remove('hidden');
+
+                if (type === 'clinician') {
+                    const ctx = document.getElementById('domainChart').getContext('2d');
+                    new Chart(ctx, { type: 'bar', data: { labels: domainScores.map(d => d.category), datasets: [{ data: domainScores.map(d => d.score), backgroundColor: domainScores.map(d => d.score > 75 ? '#ef4444' : d.score > 50 ? '#f97316' : d.score > 25 ? '#eab308' : '#22c55e') }] }, options: { indexAxis: 'y', scales: { x: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } } });
+                }
+            }
+            
+            window.goHome = () => {
+                resetState();
+                document.getElementById('reportContainer').innerHTML = '';
+                document.getElementById('reportContainer').classList.add('hidden');
+                document.getElementById('mainContainer').classList.remove('hidden');
+                render();
+            };
+
+            window.switchReportView = (type) => {
+                generateReport(type);
+            };
+
+            window.downloadReportPDF = () => {
+                const reportContent = document.getElementById('reportContent');
+                const loadingModal = document.getElementById('loadingModal');
+                loadingModal.innerHTML = `<div class="relative top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-5 border w-96 shadow-lg rounded-md bg-white text-center">
+                    <div class="flex justify-center mb-4"><div class="spinner"></div></div><h3 class="text-lg font-medium text-gray-900">Preparing PDF...</h3></div>`;
+                loadingModal.classList.remove('hidden');
+
+                html2canvas(reportContent, { scale: 2 }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    const canvasWidth = canvas.width;
+                    const canvasHeight = canvas.height;
+                    const ratio = canvasWidth / canvasHeight;
+                    const imgWidth = pdfWidth - 20;
+                    const imgHeight = imgWidth / ratio;
+                    
+                    let heightLeft = imgHeight;
+                    let position = 10;
+
+                    pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                    heightLeft -= pdfHeight;
+
+                    while (heightLeft > 0) {
+                        position = heightLeft - imgHeight + 10;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                        heightLeft -= pdfHeight;
+                    }
+                    
+                    pdf.save(`recovery-report-${Date.now()}.pdf`);
+                    loadingModal.classList.add('hidden');
+                });
+            };
+            
+            function resetState() {
+                 userState = JSON.parse(JSON.stringify(initialUserState));
+            }
+
+            // --- Initial Setup ---
+            resetState();
+            setupDevBar();
+            render();
+        });
+    </script>
+
+</body>
+</html>
