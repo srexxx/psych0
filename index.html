@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psychometric Tools Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #eef2f3 0%, #8e9eab 100%);
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.4);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+        .btn {
+            transition: all 0.2s ease-in-out;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+    </style>
+</head>
+<body class="text-slate-800">
+    <div id="loginContainer" class="glass p-8 max-w-md w-full text-center">
+        <h1 class="text-2xl font-bold mb-6">Psychometric Portal Login</h1>
+        <input type="password" id="passwordInput" placeholder="Password" class="mb-4 w-full p-3 rounded bg-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        <button id="loginButton" class="btn bg-blue-500 text-white font-semibold px-4 py-2 rounded w-full">Enter</button>
+        <p id="errorMsg" class="text-red-600 mt-2 hidden">Incorrect password</p>
+    </div>
+
+    <div id="mainContainer" class="glass p-8 max-w-xl w-full text-center hidden">
+        <h1 class="text-2xl font-bold mb-6">AI Powered Psychometric Tools</h1>
+        <p class="mb-6">Choose from the tools below.</p>
+        <a href="AdvancedRelapsePreventionAssessment.html" class="btn bg-green-500 text-white font-semibold px-4 py-2 rounded inline-block">Open Relapse Prevention Assessment</a>
+    </div>
+
+    <script>
+        const PASSWORD = 'letthem54321';
+        const passwordInput = document.getElementById('passwordInput');
+        const loginButton = document.getElementById('loginButton');
+        const errorMsg = document.getElementById('errorMsg');
+        const loginContainer = document.getElementById('loginContainer');
+        const mainContainer = document.getElementById('mainContainer');
+
+        function attemptLogin() {
+            if (passwordInput.value === PASSWORD) {
+                loginContainer.classList.add('hidden');
+                mainContainer.classList.remove('hidden');
+            } else {
+                errorMsg.classList.remove('hidden');
+                setTimeout(() => errorMsg.classList.add('hidden'), 2000);
+            }
+        }
+
+        loginButton.addEventListener('click', attemptLogin);
+        passwordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') attemptLogin();
+        });
+    </script>
+</body>
+</html>
