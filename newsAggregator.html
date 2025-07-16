@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardian News Feed</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Use the Inter font family */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style for the scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827; /* gray-900 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563; /* gray-600 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* gray-500 */
+        }
+        /* Style for active filter buttons */
+        .filter-btn-active {
+            background-color: #3b82f6 !important; /* blue-500 */
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 antialiased">
+
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-lg sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                 <h1 class="text-3xl font-bold text-white tracking-tight">
+                    The Guardian <span class="text-blue-400">Feed</span>
+                </h1>
+            </div>
+            <p class="text-gray-400 mt-1">Your daily digest, filtered by category</p>
+            
+            <!-- Filters Container -->
+            <div class="mt-6">
+                <!-- Category Filters -->
+                <div id="category-filters" class="flex flex-wrap gap-2">
+                    <!-- Category buttons will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div id="news-feed" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
+            <div id="loading-indicator" class="hidden text-center py-8">
+                <svg class="animate-spin h-8 w-8 text-blue-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <p class="text-gray-400 mt-2">Loading more articles...</p>
+            </div>
+            <div id="error-message" class="hidden text-center bg-red-800/50 border border-red-700 p-8 rounded-lg"></div>
+            <div id="end-of-feed-message" class="hidden text-center text-gray-500 py-8">
+                <p>You've reached the end of the feed.</p>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        // --- CONFIGURATION ---
+        const guardianApiKey = '02fb781a-bc9b-4b43-a7a1-b3df8c10cc59';
+        const articlesPerPage = 20;
+        // Expanded list of categories from The Guardian
+        const categories = ['all', 'world', 'politics', 'business', 'technology', 'science', 'sport', 'environment', 'culture', 'lifeandstyle', 'fashion'];
+
+        // --- STATE ---
+        let currentPage = 1;
+        let isLoading = false;
+        let hasMoreArticles = true;
+        let activeCategory = 'all';
+
+        // --- DOM ELEMENTS ---
+        const newsFeedContainer = document.getElementById('news-feed');
+        const errorMessageContainer = document.getElementById('error-message');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const endOfFeedMessage = document.getElementById('end-of-feed-message');
+        const categoryFiltersContainer = document.getElementById('category-filters');
+
+        // --- HELPERS ---
+        const displayError = (message) => {
+            errorMessageContainer.innerHTML = `<h2 class="text-2xl font-semibold text-red-300 mb-2">An Error Occurred</h2><p class="text-red-400">${message}</p>`;
+            errorMessageContainer.classList.remove('hidden');
+            newsFeedContainer.classList.add('hidden');
+        };
+
+        const clearFeed = () => {
+            newsFeedContainer.innerHTML = '';
+            currentPage = 1;
+            hasMoreArticles = true;
+            isLoading = false;
+            errorMessageContainer.classList.add('hidden');
+            endOfFeedMessage.classList.add('hidden');
+            newsFeedContainer.classList.remove('hidden');
+        };
+
+        // --- DATA FETCHING & NORMALIZATION ---
+        const normalizeGuardianArticle = (article) => ({
+            id: article.id,
+            title: article.webTitle,
+            summary: article.fields.trailText || 'No summary available.',
+            url: article.webUrl,
+            imageUrl: article.fields.thumbnail,
+            date: new Date(article.webPublicationDate),
+        });
+
+        const fetchFromGuardian = async (page, category) => {
+            let categoryQuery = category !== 'all' ? `&section=${category}` : '';
+            const url = `https://content.guardianapis.com/search?api-key=${guardianApiKey}&show-fields=thumbnail,trailText&page-size=${articlesPerPage}&page=${page}${categoryQuery}&order-by=newest`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`The Guardian API request failed: ${response.statusText}`);
+            const data = await response.json();
+            const { results, pages } = data.response;
+            if (page >= pages || results.length < articlesPerPage) {
+                hasMoreArticles = false;
+            }
+            return results.map(normalizeGuardianArticle);
+        };
+
+        // --- MAIN FETCH ORCHESTRATOR ---
+        async function fetchArticles() {
+            if (isLoading || !hasMoreArticles) return;
+            isLoading = true;
+            loadingIndicator.classList.remove('hidden');
+            endOfFeedMessage.classList.add('hidden');
+
+            try {
+                const articles = await fetchFromGuardian(currentPage, activeCategory);
+                
+                if (articles.length === 0 && currentPage === 1) {
+                     newsFeedContainer.innerHTML = '<p class="text-center col-span-full text-gray-400">No articles found for the selected category.</p>';
+                } else {
+                    renderArticles(articles);
+                    currentPage++;
+                }
+
+            } catch (error) {
+                console.error("Failed to fetch news:", error);
+                displayError(error.message);
+            } finally {
+                isLoading = false;
+                loadingIndicator.classList.add('hidden');
+                if (!hasMoreArticles) {
+                    endOfFeedMessage.classList.remove('hidden');
+                }
+            }
+        }
+
+        // --- RENDERING ---
+        function renderArticles(articles) {
+            const fragment = document.createDocumentFragment();
+            articles.forEach(article => {
+                const articleElement = document.createElement('div');
+                articleElement.className = 'bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col transform hover:-translate-y-1 transition-transform duration-300';
+                
+                const thumbnailUrl = article.imageUrl || 'https://placehold.co/600x400/111827/4b5563?text=No+Image';
+
+                articleElement.innerHTML = `
+                    <div class="flex-shrink-0">
+                        <img class="h-48 w-full object-cover" src="${thumbnailUrl}" alt="" onerror="this.onerror=null;this.src='https://placehold.co/600x400/111827/4b5563?text=Error';">
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow">
+                        <div class="flex-1">
+                            <a href="${article.url}" target="_blank" rel="noopener noreferrer" class="block mt-2">
+                                <p class="text-xl font-semibold text-gray-100 hover:text-blue-300">${article.title}</p>
+                                <p class="mt-3 text-base text-gray-400">${article.summary}</p>
+                            </a>
+                        </div>
+                        <div class="mt-6 flex items-center justify-end">
+                            <p class="text-sm text-gray-500">${article.date.toLocaleDateString('en-AU', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                    </div>
+                `;
+                fragment.appendChild(articleElement);
+            });
+            newsFeedContainer.appendChild(fragment);
+        }
+
+        function setupFilters() {
+            // Category Buttons
+            categoryFiltersContainer.innerHTML = categories.map(cat => 
+                `<button data-category="${cat}" class="filter-btn px-3 py-1 text-sm font-medium rounded-full transition ${cat === 'all' ? 'filter-btn-active' : ''} bg-gray-700 text-gray-300 hover:bg-gray-600">
+                    ${cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </button>`
+            ).join('');
+
+            // Category Button Listeners
+            categoryFiltersContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.filter-btn');
+                if (button) {
+                    activeCategory = button.dataset.category;
+                    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('filter-btn-active'));
+                    button.classList.add('filter-btn-active');
+                    clearFeed();
+                    fetchArticles();
+                }
+            });
+        }
+
+        // --- SCROLL LISTENER ---
+        window.addEventListener('scroll', () => {
+            if (!isLoading && hasMoreArticles && (window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 500) {
+                fetchArticles();
+            }
+        });
+
+        // --- INITIALIZATION ---
+        setupFilters();
+        fetchArticles();
+    </script>
+
+</body>
+</html>
