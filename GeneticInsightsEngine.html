@@ -1,0 +1,579 @@
+import React, { useState, useEffect, useCallback } from 'react';
+
+// --- HELPER & UI COMPONENTS ---
+
+const Spinner = ({ size = 'h-6 w-6' }) => (
+  <div className={`animate-spin rounded-full ${size} border-t-2 border-b-2 border-indigo-400`}></div>
+);
+
+// --- SVG Icons for Categories ---
+const icons = {
+  "Fitness & Performance": (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11.92,2.27,15,3.72,12,8.72,9,3.72,11.92,2.27m0,0L12,22" /><path d="M12,8.72,18,12,21.27,11.92,18,7,12,8.72m0,0-.27.18" /><path d="M12,8.72,6,12,2.73,11.92,6,7,12,8.72m0,0,.27.18" />
+    </svg>
+  ),
+  "Metabolism & Nutrition": (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.6.11.82-.26.82-.57v-2.1c-2.78.6-3.37-1.34-3.37-1.34-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.83 1.23 1.83 1.23 1.07 1.83 2.8 1.3 3.48 1 .1-.78.42-1.3 1.2-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.54-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.47 5.92.43.37.82 1.1.82 2.22v3.29c0 .31.22.69.82.57A10 10 0 0 0 22 12 10 10 0 0 0 12 2z" /></svg>
+  ),
+  "Wellness & Health": (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
+  ),
+  "Sexual Health": <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20.94c-2.2-2.35-4.44-4.93-4.44-8.04A4.44 4.44 0 0 1 12 4.44a4.44 4.44 0 0 1 4.44 4.46c0 3.1-2.24 5.69-4.44 8.04Z"/><path d="M12 20.94c2.2-2.35 4.44-4.93 4.44-8.04A4.44 4.44 0 0 0 12 4.44a4.44 4.44 0 0 0-4.44 4.46c0 3.1 2.24 5.69 4.44 8.04Z"/></svg>,
+  "Neurological Function": <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.6.11.82-.26.82-.57v-2.1c-2.78.6-3.37-1.34-3.37-1.34-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.83 1.23 1.83 1.23 1.07 1.83 2.8 1.3 3.48 1 .1-.78.42-1.3 1.2-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.54-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.47 5.92.43.37.82 1.1.82 2.22v3.29c0 .31.22.69.82.57A10 10 0 0 0 22 12 10 10 0 0 0 12 2z"/><path d="M12 12v.01"/></svg>,
+  "Metabolic Disorders": <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>,
+  "Cancers": <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.5c-5.25 0-9.5 4.25-9.5 9.5s4.25 9.5 9.5 9.5 9.5-4.25 9.5-9.5S17.25 2.5 12 2.5z"/><path d="M12 12.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M12 2.5v2"/><path d="M12 21.5v-2"/><path d="m4.22 4.22 1.42 1.42"/><path d="m18.36 18.36 1.42 1.42"/><path d="M2.5 12h2"/><path d="M21.5 12h-2"/><path d="m4.22 19.78 1.42-1.42"/><path d="m18.36 5.64 1.42-1.42"/></svg>,
+  "Dermatological": <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v4l2 1"/></svg>,
+  "Respiratory": <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m5.64 5.64 1.41 1.41"/><path d="m16.95 16.95 1.41 1.41"/><path d="m5.64 18.36 1.41-1.41"/><path d="m16.95 7.05 1.41-1.41"/></svg>,
+};
+
+const SNPModal = ({ snp, userGenotype, onClose, geminiApiKey }) => {
+  const [insight, setInsight] = useState(null);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState('Synthesizing data...');
+
+  const generateInsight = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    const dataSources = "NCBI dbSNP, NCBI ClinVar, 1000 Genomes Project, gnomAD, Ensembl, UCSC Genome Browser, DECIPHER, GWAS Catalog, OMIM, PharmGKB, GeneCards, DisGeNET, CPIC, PharmVar, SNPedia, Promethease, Genetic Genie reports, Impute.me, SelfDecode, ClinGen, and ACMG guidelines";
+    
+    const prompt = `
+      You are an expert AI bioinformatician tasked with creating a comprehensive, multi-source summary for a lay audience. Your response MUST be in a valid JSON format.
+
+      **Primary Task:** Synthesize information for the SNP ${snp.rsid} as if you have queried and cross-referenced these authoritative sources: ${dataSources}.
+
+      **Genetic Data for Analysis:**
+      - SNP ID: ${snp.rsid}
+      - Gene: ${snp.gene}
+      - Common Name/Function: ${snp.name}
+      - User's Genotype: ${userGenotype}
+
+      **Required JSON Output Structure:**
+      Provide your response as a single JSON object with the following exact keys:
+      {
+        "summary": "(String) A concise overview of the gene's function and the SNP's general role. Mention its chromosome and position if available.",
+        "genotype_interpretation": "(String) Explain the specific meaning of the user's genotype (${userGenotype}). Be objective and use cautious phrasing like 'associated with a tendency for' or 'may influence'. Note the ClinVar classification (e.g., Benign, Pathogenic, Uncertain) for the variant if applicable.",
+        "trait_associations": "(Array of Objects) List key health, wellness, or trait associations from sources like GWAS Catalog, SNPedia, or DisGeNET. Each object in the array should have two keys: 'trait' (String) and 'description' (String).",
+        "pharmacogenomics": "(String) Summarize any known pharmacogenomic relevance from PharmGKB, CPIC, or PharmVar. If none are well-established, state 'No well-established pharmacogenomic associations found.'",
+        "population_insights": "(String) Briefly describe allele frequency variations across different populations (e.g., European, East Asian, African) based on gnomAD or 1000 Genomes data.",
+        "confidence_level": "(String) Classify the overall scientific confidence for the primary associations. Use one of these exact values: 'Well-established', 'Moderate evidence', 'Limited/Emerging'.",
+        "confidence_explanation": "(String) Justify the confidence level, referencing the types of studies (e.g., large-scale GWAS, meta-analyses) that support the main findings.",
+        "disclaimer": "(String) Use this exact mandatory statement: 'This information is for educational and informational purposes only and does not constitute medical advice. Consult with a qualified healthcare professional or genetic counselor to discuss your results and any health concerns.'"
+      }
+    `;
+
+    const maxRetries = 3;
+    let delay = 1000;
+
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: { responseMimeType: "application/json" }
+            };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!text) throw new Error("Invalid response structure from API.");
+                
+                setInsight(JSON.parse(text));
+                setIsLoading(false);
+                return; // Success
+            }
+
+            if (response.status === 503 || response.status >= 500) {
+                if (i === maxRetries - 1) {
+                    throw new Error(`The AI model is currently overloaded. Please try again in a few moments. (Status: ${response.status})`);
+                }
+                setLoadingMessage(`Model is busy, retrying... (${i + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+                continue;
+            }
+
+            const errorBody = await response.json();
+            throw new Error(`API call failed: ${response.status} - ${errorBody?.error?.message || 'Unknown error'}`);
+
+        } catch (err) {
+            console.error(`Insight Generation Error (Attempt ${i + 1}):`, err);
+            if (i === maxRetries - 1) {
+                setError(`Failed to generate insights after ${maxRetries} attempts. ${err.message}`);
+                setIsLoading(false);
+            }
+        }
+    }
+  }, [snp, userGenotype, geminiApiKey]);
+
+  useEffect(() => {
+    generateInsight();
+  }, [generateInsight]);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
+      <div className="bg-gray-900/80 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 md:p-8 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors z-10">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        <div className="pr-8">
+            <h2 className="text-3xl font-bold text-white mb-1">{snp.rsid}</h2>
+            <p className="text-xl text-indigo-300 font-mono">{snp.gene} - Your Genotype: {userGenotype}</p>
+            <p className="text-lg text-gray-300 mt-1">{snp.name}</p>
+        </div>
+        
+        <div className="mt-6 border-t border-gray-700 pt-6">
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center space-y-4 h-64">
+              <Spinner size="h-12 w-12" />
+              <p className="text-gray-300 text-lg">{loadingMessage}</p>
+            </div>
+          )}
+          {error && (
+            <div className="text-center p-8 bg-red-900/20 rounded-lg"><p className="text-red-400 font-semibold">An Error Occurred</p><p className="text-gray-300 mt-2">{error}</p></div>
+          )}
+          {insight && (
+            <div className="space-y-6 text-gray-200">
+              <div><h3 className="text-lg font-semibold text-indigo-300 mb-2">Summary</h3><p className="text-base leading-relaxed">{insight.summary}</p></div>
+              <div><h3 className="text-lg font-semibold text-indigo-300 mb-2">Your Genotype Interpretation</h3><p className="text-base leading-relaxed">{insight.genotype_interpretation}</p></div>
+              
+              {insight.trait_associations && insight.trait_associations.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-indigo-300 mb-3">Trait Associations</h3>
+                  <div className="space-y-3">
+                    {insight.trait_associations.map((item, index) => (
+                      <div key={index} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                        <p className="font-semibold text-gray-200">{item.trait}</p>
+                        <p className="text-sm text-gray-400 mt-1">{item.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {insight.pharmacogenomics && (
+                 <div><h3 className="text-lg font-semibold text-indigo-300 mb-2">Pharmacogenomics</h3><p className="text-base leading-relaxed">{insight.pharmacogenomics}</p></div>
+              )}
+
+              {insight.population_insights && (
+                 <div><h3 className="text-lg font-semibold text-indigo-300 mb-2">Population Insights</h3><p className="text-base leading-relaxed">{insight.population_insights}</p></div>
+              )}
+
+              <div><h3 className="text-lg font-semibold text-indigo-300 mb-2">Scientific Confidence</h3>
+                <div className="flex items-center gap-3">
+                    <span className={`px-3 py-1 text-sm font-bold rounded-full ${insight.confidence_level === 'Well-established' ? 'bg-green-500/20 text-green-300' : insight.confidence_level === 'Moderate evidence' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-orange-500/20 text-orange-300'}`}>{insight.confidence_level}</span>
+                </div>
+                <p className="text-sm leading-relaxed mt-3 text-gray-400">{insight.confidence_explanation}</p>
+              </div>
+               <div className="border-t border-gray-700 pt-4 mt-4"><p className="text-xs text-gray-500 italic">{insight.disclaimer}</p></div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ResultCard = ({ snp, onClick }) => {
+    const categoryKey = Object.keys(icons).find(key => key.includes(snp.category)) || "Wellness & Health";
+    return (
+        <div onClick={onClick} className="bg-gray-900/70 p-5 rounded-xl border border-gray-700 hover:border-indigo-500 hover:bg-gray-800/80 cursor-pointer transition-all duration-300 shadow-lg hover:shadow-indigo-500/20 group relative overflow-hidden">
+            <div className="flex justify-between items-start">
+                <div>
+                    <p className="font-bold text-lg text-white">{snp.rsid}</p>
+                    <p className="text-sm text-gray-400">{snp.gene}</p>
+                </div>
+                <div className="text-indigo-400 group-hover:scale-110 transition-transform">{icons[categoryKey]}</div>
+            </div>
+            <div className="mt-4 h-16">
+                {snp.preview ? (
+                    <p className="text-sm text-gray-300 leading-snug">{snp.preview}</p>
+                ) : (
+                    <div className="flex items-center space-x-2">
+                        <Spinner size="h-4 w-4" />
+                        <span className="text-sm text-gray-500">Generating preview...</span>
+                    </div>
+                )}
+            </div>
+            <div className="mt-4 text-right">
+                <span className="font-mono text-indigo-300 bg-gray-800 px-3 py-1 rounded-md text-sm">{snp.userGenotype}</span>
+            </div>
+            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        </div>
+    );
+};
+
+
+export default function App() {
+  const [rawData, setRawData] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [geminiApiKey] = useState('AIzaSyDldU64ylgeEZWNBS_iTCG43tO5HgnR95g');
+  const [analysisResults, setAnalysisResults] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [error, setError] = useState(null);
+  const [selectedSnp, setSelectedSnp] = useState(null);
+  const [backgroundImages, setBackgroundImages] = useState([]);
+  const [currentBgIndex, setCurrentBgIndex] = useState(0);
+
+  // Generate background images on initial load
+  useEffect(() => {
+    const generateBackgrounds = async () => {
+        const prompt = "Abstract DNA helix, futuristic, health, wellness, blue and purple glowing lights, digital art, clean, minimalist, website background.";
+        const payload = { instances: [{ prompt: prompt }], parameters: { "sampleCount": 4 } };
+        const apiKey = ""; // Leave empty for automatic handling
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+              console.error("Background generation failed with status:", response.status);
+              return;
+            }
+            const result = await response.json();
+            if (result.predictions && result.predictions.length > 0) {
+                const imageUrls = result.predictions.map(p => `data:image/png;base64,${p.bytesBase64Encoded}`);
+                setBackgroundImages(imageUrls);
+            }
+        } catch (error) {
+            console.error("Failed to generate background images:", error);
+        }
+    };
+    generateBackgrounds();
+  }, []);
+
+  // Cycle through background images
+  useEffect(() => {
+    if (backgroundImages.length > 1) {
+        const intervalId = setInterval(() => {
+            setCurrentBgIndex(prevIndex => (prevIndex + 1) % backgroundImages.length);
+        }, 15000); // Change image every 15 seconds
+
+        return () => clearInterval(intervalId);
+    }
+  }, [backgroundImages]);
+
+
+  const generatePreviews = useCallback(async (results, userSnpMap) => {
+    setLoadingMessage("Generating previews for results...");
+    const snpsToPreview = Object.values(results).flat();
+
+    const previewPromises = snpsToPreview.map(async (snp) => {
+        const prompt = `For the SNP ${snp.rsid} (gene: ${snp.gene}), which is related to "${snp.name}", provide a very short, one-sentence teaser (max 15 words) for a summary card. Make it intriguing but scientifically grounded. Example: 'This marker offers a clue into how your body processes certain fats.'`;
+        
+        try {
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) return { ...snp, preview: "Could not load preview." };
+            const result = await response.json();
+            const previewText = result.candidates?.[0]?.content?.parts?.[0]?.text || "No preview available.";
+            return { ...snp, preview: previewText.trim(), userGenotype: userSnpMap.get(snp.rsid) };
+        } catch (e) {
+            return { ...snp, preview: "Could not load preview.", userGenotype: userSnpMap.get(snp.rsid) };
+        }
+    });
+
+    const snpsWithPreviews = await Promise.all(previewPromises);
+    
+    const updatedResults = {};
+    snpsWithPreviews.forEach(snp => {
+        if (!updatedResults[snp.category]) updatedResults[snp.category] = [];
+        updatedResults[snp.category].push(snp);
+    });
+
+    setAnalysisResults(updatedResults);
+  }, [geminiApiKey]);
+
+  const filterAndCategorizeSnps = useCallback(async (userSnpMap) => {
+    const allSnps = Array.from(userSnpMap.keys());
+    const chunkSize = 500;
+    const totalChunks = Math.ceil(allSnps.length / chunkSize);
+    let allNotableSnps = {};
+
+    const dataSources = "NCBI dbSNP, ClinVar, GWAS Catalog, PharmGKB, SNPedia";
+    const categories = [
+        "Fitness & Performance", "Metabolism & Nutrition", "Wellness & Health",
+        "Sexual Health", "Neurological Function", "Metabolic Disorders",
+        "Cancers", "Dermatological", "Respiratory"
+    ].join('", "');
+
+    for (let i = 0; i < totalChunks; i++) {
+        const chunk = allSnps.slice(i * chunkSize, (i + 1) * chunkSize);
+        setLoadingMessage(`Analyzing chunk ${i + 1} of ${totalChunks}...`);
+        
+        const prompt = `
+          You are an AI bioinformatician. From the following list of SNPs, identify a maximum of 12 that are the most notable (positive, negative, or otherwise significant) based on data from sources like ${dataSources}.
+
+          SNP list: ${chunk.join(', ')}
+
+          For each notable SNP you identify, provide its rsid, associated gene, a common name or primary function, and categorize it into ONE of the following: "${categories}".
+
+          Your response MUST be a valid JSON object with categories as keys. The value for each key should be an array of objects, where each object represents a notable SNP.
+        `;
+        
+        const maxRetries = 3;
+        let delay = 1000;
+
+        for (let j = 0; j < maxRetries; j++) {
+            try {
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                        const notableSnpsInChunk = JSON.parse(text);
+                        // Merge results
+                        for (const category in notableSnpsInChunk) {
+                            if (!allNotableSnps[category]) {
+                                allNotableSnps[category] = [];
+                            }
+                            allNotableSnps[category].push(...notableSnpsInChunk[category]);
+                        }
+                    }
+                    break; // Success for this chunk, move to the next
+                }
+
+                if (response.status === 503 || response.status >= 500) {
+                    if (j === maxRetries - 1) throw new Error(`Model overloaded on chunk ${i+1}.`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                } else {
+                    const errorBody = await response.json();
+                    throw new Error(`AI filtering failed on chunk ${i+1}: ${response.status} - ${errorBody?.error?.message}`);
+                }
+            } catch (err) {
+                console.error(`AI Filtering Error (Chunk ${i + 1}, Attempt ${j + 1}):`, err);
+                if (j === maxRetries - 1) throw err;
+            }
+        }
+    }
+
+    if (Object.keys(allNotableSnps).length === 0) {
+        setAnalysisResults({});
+    } else {
+        await generatePreviews(allNotableSnps, userSnpMap);
+    }
+  }, [geminiApiKey, generatePreviews]);
+
+  const parseAndAnalyze = useCallback(() => {
+    setError(null);
+    if (!rawData.trim()) {
+      setError("Please provide your DNA data by pasting or uploading a file.");
+      return;
+    }
+    
+    setIsLoading(true);
+    setAnalysisResults(null);
+    setLoadingMessage("Parsing your DNA data...");
+
+    setTimeout(async () => {
+      try {
+        const lines = rawData.split('\n');
+        const userSnpMap = new Map();
+        
+        lines.forEach(line => {
+          if (line.startsWith('#') || line.trim() === '') return;
+          const parts = line.split(/\s+/);
+          if (parts.length >= 4) {
+            userSnpMap.set(parts[0], parts[3]);
+          }
+        });
+
+        if (userSnpMap.size === 0) {
+            throw new Error("Could not parse any valid SNP data. Please check the format.");
+        }
+
+        await filterAndCategorizeSnps(userSnpMap);
+
+      } catch (e) {
+        setError(e.message || "An unexpected error occurred during analysis.");
+        setAnalysisResults(null);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 100);
+  }, [rawData, filterAndCategorizeSnps]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            setRawData(event.target.result);
+            setFileName(file.name);
+        };
+        reader.readAsText(file);
+    }
+  };
+  
+  const handleDragOver = (e) => {
+      e.preventDefault();
+  };
+  
+  const handleDrop = (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+              setRawData(event.target.result);
+              setFileName(file.name);
+          };
+          reader.readAsText(file);
+      }
+  };
+
+  const resetAnalysis = () => {
+      setRawData('');
+      setFileName('');
+      setAnalysisResults(null);
+      setError(null);
+      setIsLoading(false);
+  }
+
+  return (
+    <div className="min-h-screen text-white font-sans bg-gray-900">
+      {/* Background Image Container */}
+      <div className="fixed inset-0 w-full h-full -z-20">
+        {backgroundImages.map((imgSrc, index) => (
+          <div
+            key={index}
+            className="absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000"
+            style={{
+              backgroundImage: `url(${imgSrc})`,
+              opacity: index === currentBgIndex ? 1 : 0,
+            }}
+          />
+        ))}
+      </div>
+      {/* Overlay */}
+      <div className="fixed inset-0 w-full h-full bg-gray-900/70 -z-10"></div>
+      
+      <main className="container mx-auto px-4 py-8 md:py-12 relative z-10">
+        <header className="text-center mb-10 animate-fade-in-down">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+            Genetic Insights Engine
+          </h1>
+          <p className="mt-4 text-lg text-gray-300 max-w-3xl mx-auto">
+            Unlock insights from your DNA. Your data is analyzed in your browser and never uploaded.
+          </p>
+        </header>
+
+        {!analysisResults ? (
+            <div className="max-w-4xl mx-auto animate-fade-in-up">
+                <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-gray-700 shadow-2xl shadow-indigo-900/20">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                        <textarea
+                            value={rawData}
+                            onChange={(e) => {
+                                setRawData(e.target.value);
+                                if (fileName) setFileName(''); // Clear file if user starts typing
+                            }}
+                            placeholder="Paste your raw DNA data here..."
+                            className="w-full h-64 bg-gray-900/80 border border-gray-600 rounded-lg p-4 text-gray-300 font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all duration-300"
+                            disabled={isLoading || !!fileName}
+                        />
+                        <div 
+                            className="w-full h-64 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-center p-4 hover:border-indigo-500 transition-colors"
+                            onDragOver={handleDragOver}
+                            onDrop={handleDrop}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                            <p className="text-gray-400">...or drag & drop a file</p>
+                            <p className="text-gray-500 text-sm mt-1">Accepts .txt, .zip, etc.</p>
+                            <label htmlFor="file-upload" className="mt-2 cursor-pointer text-indigo-400 font-semibold hover:text-indigo-300">
+                                Select a file
+                            </label>
+                            <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} />
+                            {fileName && <p className="text-sm text-green-400 mt-3">Loaded: {fileName}</p>}
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="mt-4 p-3 bg-red-900/30 border border-red-700 rounded-lg text-center text-red-300">
+                            {error}
+                        </div>
+                    )}
+                    <div className="mt-6 flex justify-center">
+                        <button
+                            onClick={parseAndAnalyze}
+                            disabled={isLoading || !rawData}
+                            className="flex items-center justify-center w-full md:w-auto px-12 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-lg shadow-lg hover:shadow-indigo-500/40 hover:scale-105 disabled:hover:scale-100 disabled:bg-gray-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all duration-300"
+                        >
+                            {isLoading ? <><Spinner /> <span className="ml-3">{loadingMessage}</span></> : 'Analyze My DNA'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        ) : (
+            <div className="max-w-6xl mx-auto animate-fade-in">
+                <div className="text-center mb-8">
+                    <button onClick={resetAnalysis} className="text-indigo-400 hover:text-indigo-300 transition-colors">&larr; Start Over</button>
+                </div>
+                <div className="space-y-10">
+                    {Object.keys(analysisResults).length > 0 ? (
+                        Object.entries(analysisResults).map(([category, snps]) => (
+                            <div key={category}>
+                                <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300 mb-5">{category}</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {snps.map(snp => <ResultCard key={snp.rsid} snp={snp} onClick={() => setSelectedSnp(snp)} />)}
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-center bg-gray-800/50 rounded-2xl p-12">
+                            <h2 className="text-2xl font-bold text-yellow-400">No Notable SNPs Found</h2>
+                            <p className="text-gray-400 mt-2">Based on our analysis, we didn't identify any of the most common, highly-studied genetic markers in your data sample.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        )}
+
+        {selectedSnp && <SNPModal snp={selectedSnp} userGenotype={selectedSnp.userGenotype} onClose={() => setSelectedSnp(null)} geminiApiKey={geminiApiKey} />}
+      </main>
+    </div>
+  );
+}
+
+// Add some basic CSS for animations
+const style = document.createElement('style');
+style.innerHTML = `
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-in-out;
+  }
+  @keyframes fade-in-down {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in-down {
+    animation: fade-in-down 0.5s ease-in-out;
+  }
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-in-out;
+  }
+`;
+document.head.appendChild(style);
