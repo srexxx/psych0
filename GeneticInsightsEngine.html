@@ -298,7 +298,7 @@ export default function App() {
 
   const filterAndCategorizeSnps = useCallback(async (userSnpMap) => {
     const allSnps = Array.from(userSnpMap.keys());
-    const chunkSize = 500;
+    const chunkSize = 150; // Further reduced chunk size for stability
     const totalChunks = Math.ceil(allSnps.length / chunkSize);
     let allNotableSnps = {};
 
@@ -345,11 +345,13 @@ export default function App() {
                             allNotableSnps[category].push(...notableSnpsInChunk[category]);
                         }
                     }
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Increased delay between chunks
                     break; // Success for this chunk, move to the next
                 }
 
                 if (response.status === 503 || response.status >= 500) {
-                    if (j === maxRetries - 1) throw new Error(`Model overloaded on chunk ${i+1}.`);
+                    if (j === maxRetries - 1) throw new Error(`Model overloaded on chunk ${i+1}. The service is currently busy. Please try again later.`);
+                    setLoadingMessage(`Model busy, retrying chunk ${i + 1}... (${j + 1}/${maxRetries})`);
                     await new Promise(resolve => setTimeout(resolve, delay));
                     delay *= 2;
                 } else {
