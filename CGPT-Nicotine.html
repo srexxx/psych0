@@ -1,0 +1,115 @@
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+
+export default function NicotineCessationTool() {
+  const [step, setStep] = useState(0);
+  const [userData, setUserData] = useState({
+    smokingHistory: "",
+    dependenceLevel: "",
+    traumaHistory: "",
+    psychologicalFactors: "",
+    environmentalTriggers: "",
+    socialSupport: "",
+    goals: "",
+  });
+
+  const handleChange = (field, value) => {
+    setUserData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleNext = () => {
+    if (step < 6) setStep(step + 1);
+  };
+
+  const handleBack = () => {
+    if (step > 0) setStep(step - 1);
+  };
+
+  const renderStep = () => {
+    switch (step) {
+      case 0:
+        return (
+          <Textarea
+            placeholder="Describe your nicotine use history, including age of onset, method (e.g., vaping, smoking), and frequency."
+            value={userData.smokingHistory}
+            onChange={(e) => handleChange("smokingHistory", e.target.value)}
+          />
+        );
+      case 1:
+        return (
+          <Textarea
+            placeholder="How dependent do you feel on nicotine? Include daily cravings, use in stressful moments, etc."
+            value={userData.dependenceLevel}
+            onChange={(e) => handleChange("dependenceLevel", e.target.value)}
+          />
+        );
+      case 2:
+        return (
+          <Textarea
+            placeholder="Briefly describe any traumatic experiences that may relate to your nicotine use (if comfortable)."
+            value={userData.traumaHistory}
+            onChange={(e) => handleChange("traumaHistory", e.target.value)}
+          />
+        );
+      case 3:
+        return (
+          <Textarea
+            placeholder="List any mental health conditions, stressors, or emotional triggers impacting your use."
+            value={userData.psychologicalFactors}
+            onChange={(e) => handleChange("psychologicalFactors", e.target.value)}
+          />
+        );
+      case 4:
+        return (
+          <Textarea
+            placeholder="What social or environmental factors contribute to or discourage your use?"
+            value={userData.environmentalTriggers}
+            onChange={(e) => handleChange("environmentalTriggers", e.target.value)}
+          />
+        );
+      case 5:
+        return (
+          <Textarea
+            placeholder="Describe your current support system. Who, if anyone, helps you regulate your emotions or stay accountable?"
+            value={userData.socialSupport}
+            onChange={(e) => handleChange("socialSupport", e.target.value)}
+          />
+        );
+      case 6:
+        return (
+          <Textarea
+            placeholder="Describe your ideal outcome. What does success look like for you in 1 month, 3 months, and 6 months?"
+            value={userData.goals}
+            onChange={(e) => handleChange("goals", e.target.value)}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-3xl mx-auto">
+      <Card className="bg-white shadow-xl rounded-2xl">
+        <CardContent className="p-6">
+          <h2 className="text-xl font-semibold mb-4 text-center text-gray-800">
+            Trauma-Informed Nicotine Cessation Tool
+          </h2>
+          <Progress value={(step / 6) * 100} className="mb-4" />
+          {renderStep()}
+          <div className="flex justify-between mt-4">
+            <Button variant="outline" onClick={handleBack} disabled={step === 0}>
+              Back
+            </Button>
+            <Button onClick={handleNext}>{step === 6 ? "Finish" : "Next"}</Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
