@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Nicotine Cessation & Trauma Support Tool (v2)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F0F4F8;
+            color: #1E293B;
+        }
+        .calm-blue { background-color: #E0E7FF; }
+        .calm-green { background-color: #D1FAE5; }
+        .calm-purple { background-color: #E9D5FF; }
+        .btn-primary {
+            background-color: #4F46E5;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover { background-color: #4338CA; }
+        .btn-secondary {
+            background-color: #6B7280;
+            color: white;
+            transition: background-color: 0.3s;
+        }
+        .btn-secondary:hover { background-color: #4B5563; }
+        .btn-danger {
+            background-color: #EF4444;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-danger:hover { background-color: #DC2626; }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .input-field, .select-field {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .progress-bar {
+            background-color: #D1D5DB;
+            border-radius: 9999px;
+            height: 0.75rem;
+        }
+        .progress-bar-fill {
+            background-color: #4F46E5;
+            border-radius: 9999px;
+            height: 100%;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 2rem;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 0.75rem;
+            position: relative;
+        }
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .accordion-button {
+            width: 100%;
+            background-color: #F9FAFB;
+            color: #1E293B;
+            cursor: pointer;
+            padding: 1rem;
+            text-align: left;
+            border: none;
+            border-bottom: 1px solid #E5E7EB;
+            font-size: 1.125rem;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .accordion-button:hover {
+            background-color: #F3F4F6;
+        }
+        .accordion-content {
+            padding: 1.5rem;
+            display: none;
+            background-color: white;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        .accordion-item:first-child .accordion-button {
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+        .accordion-item:last-child .accordion-button {
+            border-bottom: none;
+        }
+        .accordion-item:last-child .accordion-content {
+             border-bottom-left-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- SOS Button -->
+    <button onclick="openSOSModal()" class="fixed bottom-4 right-4 btn-danger rounded-full w-16 h-16 flex items-center justify-center shadow-lg text-2xl font-bold z-40" aria-label="SOS Craving Support">SOS</button>
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">Your Path to a Nicotine-Free Life</h1>
+            <p class="text-lg text-gray-600 mt-2">An empowering, AI-powered tool for your unique journey.</p>
+        </header>
+
+        <div id="mainContent">
+            <!-- Navigation -->
+            <div class="flex justify-center mb-8 bg-white rounded-full shadow-md p-2">
+                <button onclick="showSection('assessment')" class="nav-btn active-nav-btn px-4 py-2 rounded-full font-semibold">Assessment</button>
+                <button onclick="showSection('report')" class="nav-btn px-4 py-2 rounded-full font-semibold" disabled>Your Report</button>
+                <button onclick="showSection('tracker')" class="nav-btn px-4 py-2 rounded-full font-semibold">Progress Tracker</button>
+                <button onclick="showSection('narrative')" class="nav-btn px-4 py-2 rounded-full font-semibold">Narrative Work</button>
+                <button onclick="showSection('resources')" class="nav-btn px-4 py-2 rounded-full font-semibold">Resources</button>
+            </div>
+
+            <!-- Assessment Section -->
+            <section id="assessment" class="page-section">
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-4">Let's Understand Your Journey</h2>
+                    <p class="mb-6 text-gray-600">Please answer the following questions honestly. This information is for you and will help create a personalized plan. Your data is kept private.</p>
+                    <div class="progress-bar mb-6"><div id="progressBar" class="progress-bar-fill" style="width: 0%;"></div></div>
+                    <form id="cessationForm"><!-- Questions will be injected here --></form>
+                    <div class="flex justify-between mt-6">
+                        <button id="prevBtn" onclick="navigateQuestion(-1)" class="btn-secondary px-6 py-2 rounded-md" style="display: none;">Previous</button>
+                        <button id="nextBtn" onclick="navigateQuestion(1)" class="btn-primary px-6 py-2 rounded-md">Next</button>
+                        <button id="submitBtn" onclick="submitAssessment()" class="btn-primary px-6 py-2 rounded-md" style="display: none;">See My Report</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Report Section -->
+            <section id="report" class="page-section" style="display: none;">
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-4">Your Personalized Cessation Guide</h2>
+                    <div id="riskScore" class="mb-6 p-4 rounded-lg calm-blue"></div>
+                    <div id="reportContainer" class="border rounded-lg overflow-hidden">
+                        <div id="reportLoader" class="text-center p-8" style="display: none;">
+                            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900 mx-auto"></div>
+                            <p class="mt-4 text-gray-600">Generating your personalized report... This may take a moment.</p>
+                        </div>
+                        <div id="geminiReportContent"></div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Progress Tracker Section -->
+            <section id="tracker" class="page-section" style="display: none;">
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-4">Your Progress Tracker</h2>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Daily Check-in</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="cravings" class="block text-sm font-medium text-gray-700">Cravings Level (0-10)</label>
+                                    <input type="range" id="cravings" name="cravings" min="0" max="10" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                </div>
+                                <div>
+                                    <label for="mood" class="block text-sm font-medium text-gray-700">Mood (1-5)</label>
+                                    <select id="mood" class="select-field"><option value="1">Very Low</option><option value="2">Low</option><option value="3" selected>Neutral</option><option value="4">Good</option><option value="5">Very Good</option></select>
+                                </div>
+                                <button onclick="logDailyData()" class="btn-primary w-full py-2 rounded-md">Log Today's Data</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Your Journey So Far</h3>
+                            <canvas id="progressChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                 <div class="card mt-6">
+                    <h3 class="text-xl font-semibold mb-2">Your Daily Motivation</h3>
+                    <div id="motivationZone" class="p-4 calm-green rounded-lg text-center">
+                        <p id="motivationText">Your personalized motivation will appear here once you complete the assessment.</p>
+                    </div>
+                    <button onclick="getMotivation()" class="btn-secondary w-full py-2 rounded-md mt-4">Give Me a Boost!</button>
+                </div>
+            </section>
+
+            <!-- Narrative Work Section -->
+            <section id="narrative" class="page-section" style="display: none;">
+                 <div class="card">
+                    <h2 class="text-2xl font-bold mb-4">Reflective Narrative Exercise</h2>
+                    <p class="mb-4 text-gray-600">This is a safe space to explore your story. This is optional and completely private.</p>
+                    <div id="narrativePrompt" class="p-4 calm-green rounded-lg mb-4 font-semibold"></div>
+                    <textarea id="narrativeInput" rows="8" class="input-field" placeholder="Write your reflections here..."></textarea>
+                    <div class="flex justify-between mt-4">
+                       <button onclick="getNewNarrativePrompt()" class="btn-secondary px-6 py-2 rounded-md">New Prompt</button>
+                       <button onclick="analyzeNarrative()" class="btn-primary px-6 py-2 rounded-md">Get Gentle Feedback</button>
+                    </div>
+                    <div id="narrativeFeedback" class="mt-6 p-4 calm-purple rounded-lg" style="display:none;"></div>
+                 </div>
+                 <div class="card mt-6">
+                    <h2 class="text-2xl font-bold mb-4">Create Your Safe Space</h2>
+                    <p class="mb-4 text-gray-600">Describe a place, real or imagined, where you feel calm and safe. Our AI will create a visual anchor for you.</p>
+                    <input type="text" id="safeSpacePrompt" class="input-field" placeholder="e.g., a quiet library with rain on the windows">
+                    <button onclick="generateSafeSpaceImage()" class="btn-primary w-full py-2 rounded-md mt-4">Visualize My Safe Space</button>
+                    <div id="safeSpaceImageContainer" class="mt-6" style="display:none;">
+                        <h3 class="text-xl font-semibold mb-2">Your Visual Anchor:</h3>
+                        <div id="imageLoader" class="text-center p-4" style="display: none;">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                            <p class="mt-2 text-gray-600">Creating your image...</p>
+                        </div>
+                        <div id="imageWrapper">
+                           <img id="safeSpaceImage" class="w-full rounded-lg shadow-md" alt="AI generated image of a safe space" style="display: none;">
+                        </div>
+                    </div>
+                 </div>
+            </section>
+
+            <!-- Resources Section -->
+            <section id="resources" class="page-section" style="display: none;">
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-4">Resources & Support</h2>
+                     <div class="space-y-6">
+                        <div>
+                            <h3 class="text-xl font-semibold">Crisis Support (Australia)</h3>
+                            <p>If you are in crisis or need immediate support, please reach out:</p>
+                            <ul class="list-disc list-inside mt-2 text-blue-600">
+                                <li><a href="tel:131114" class="hover:underline">Lifeline Australia: 13 11 14</a></li>
+                                <li><a href="tel:1300659467" class="hover:underline">Suicide Call Back Service: 1300 659 467</a></li>
+                                <li><a href="tel:1300224636" class="hover:underline">Beyond Blue: 1300 22 4636</a></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">Quitting Information</h3>
+                             <ul class="list-disc list-inside mt-2 text-blue-600">
+                                <li><a href="tel:137848" class="hover:underline">Quitline: 13 78 48</a></li>
+                                <li><a href="https://www.quit.org.au/" target="_blank" class="hover:underline">Quit.org.au</a></li>
+                                <li><a href="https://www.health.gov.au/health-topics/smoking-and-tobacco/how-to-quit-smoking" target="_blank" class="hover:underline">Australian Government - How to Quit</a></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">Trauma Resources</h3>
+                             <ul class="list-disc list-inside mt-2 text-blue-600">
+                                <li><a href="https://www.blueknot.org.au/" target="_blank" class="hover:underline">Blue Knot Foundation (National Centre of Excellence for Complex Trauma)</a></li>
+                                <li><a href="https://phoenixaustralia.org/" target="_blank" class="hover:underline">Phoenix Australia (Centre for Posttraumatic Mental Health)</a></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">About This Tool's Recommendations</h3>
+                            <p class="text-gray-600 mt-2">This tool uses AI (Google's Gemini and Imagen models) to generate personalized suggestions based on your input. It is designed to be an empowering first step and is not a substitute for professional medical advice. The goal is to help you create a robust plan to discuss with your GP or pharmacist. All medical decisions, especially concerning medications like NRT, vapes, or Varenicline, <strong class="text-red-600">must be finalized with a qualified healthcare provider</strong> who can assess your specific health situation.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+        
+        <!-- Modals -->
+        <div id="messageModal" class="modal"><div class="modal-content"><span class="close-button" onclick="closeModal('messageModal')">&times;</span><p id="modalMessage"></p></div></div>
+        <div id="sosModal" class="modal"><div class="modal-content"><span class="close-button" onclick="closeModal('sosModal')">&times;</span><h2 class="text-2xl font-bold mb-4 text-red-600">Craving Support</h2><p class="mb-4">It's okay to feel this way. Let's work through it. What's happening right now? (Optional)</p><input type="text" id="sosTriggerInput" class="input-field" placeholder="e.g., I just had a stressful call."><button onclick="handleSOS()" class="btn-primary w-full py-2 rounded-md mt-4">Give Me a Strategy</button><div id="sosResponse" class="mt-6 p-4 calm-purple rounded-lg" style="display:none;"></div></div></div>
+    </div>
+
+    <script type="module">
+        // --- START: CONFIGURATION & STATE ---
+        const questions = [
+            { id: 'start_age', text: 'At what age did you start using nicotine regularly?', type: 'number' },
+            { 
+                id: 'nicotine_usage', 
+                text: 'What is your primary form of nicotine use?', 
+                type: 'dynamic_select', 
+                options: ['Cigarettes', 'Vapes'],
+                sub_questions: {
+                    'Cigarettes': { id: 'cigs_per_day', text: 'How many cigarettes do you smoke per day?', type: 'number' },
+                    'Vapes': { id: 'puffs_per_day', text: 'How many puffs do you estimate you take per day?', type: 'number', help_text: 'For reference, many sources estimate 15 puffs is roughly equivalent to one cigarette.' }
+                }
+            },
+            { id: 'dependence', text: 'How soon after you wake up do you use nicotine?', type: 'select', options: ['Within 5 minutes', '6-30 minutes', '31-60 minutes', 'After 60 minutes'] },
+            { id: 'peak_craving_time', text: 'At what time of day are your cravings usually the strongest?', type: 'select', options: ['Morning (waking to noon)', 'Mid-day (noon to 4pm)', 'Afternoon/Evening (4pm to 8pm)', 'Late Night (after 8pm)'] },
+            { id: 'last_nicotine_time', text: 'How close to bedtime do you have your last nicotine product?', type: 'select', options: ['Right before bed', '1-2 hours before', '3+ hours before'] },
+            { id: 'craving_triggers_emotion', text: 'Which emotion is most likely to trigger a craving?', type: 'select', options: ['Stress/Anxiety', 'Boredom', 'Sadness', 'Happiness/Celebration', 'Anger'] },
+            { id: 'craving_triggers_activity', text: 'Which activity is most strongly linked to your nicotine use?', type: 'select', options: ['Driving', 'After meals', 'With coffee/alcohol', 'Taking a work break', 'Socializing with other users'] },
+            { id: 'oral_fixation', text: 'On a scale of 1 to 10, how important is the physical hand-to-mouth action or the sensation of inhaling?', type: 'slider', min: 1, max: 10 },
+            { id: 'quit_fear', text: 'What is your biggest fear or worry about quitting?', type: 'text', placeholder: 'e.g., Gaining weight, not coping with stress...' },
+            { id: 'past_success', text: 'In past quit attempts, what was the one thing that helped you the most, even for a short time?', type: 'text', placeholder: 'e.g., Chewing gum, going for a walk...' },
+            { id: 'past_quit_attempts', text: 'How many serious quit attempts have you made in the past?', type: 'number' },
+            { id: 'other_substances', text: 'Do you currently use other substances (e.g., alcohol, cannabis)?', type: 'select', options: ['Never', 'Rarely', 'Sometimes', 'Often'] },
+            { id: 'trauma_experience', text: 'Have you experienced events in your life that you would consider traumatic?', type: 'select', options: ['Yes', 'No', 'Unsure / Prefer not to say'] },
+            { id: 'stress_level', text: 'On a scale of 1 to 10, what is your average daily stress level?', type: 'slider', min: 1, max: 10 },
+            { id: 'coping_mechanisms', text: 'Besides nicotine, how do you typically cope with stress or difficult emotions?', type: 'text' },
+            { id: 'physical_activity', text: 'How would you describe your level of physical activity?', type: 'select', options: ['Sedentary', 'Lightly Active', 'Moderately Active', 'Very Active'] },
+            { id: 'social_support', text: 'How supportive are your friends and family of your decision to quit?', type: 'select', options: ['Very Supportive', 'Somewhat Supportive', 'Neutral', 'Not Supportive'] },
+            { id: 'motivation_quit', text: 'What is your single biggest motivation for quitting?', type: 'text', placeholder: 'e.g., For my health, for my kids...' },
+            { id: 'motivation_level', text: 'On a scale of 1 to 10, how motivated are you to quit right now?', type: 'slider', min: 1, max: 10 }
+        ];
+        let currentQuestionIndex = 0;
+        const userAnswers = {};
+        // --- END: CONFIGURATION & STATE ---
+
+        // --- START: ASSESSMENT LOGIC ---
+        function renderCurrentQuestion() {
+            const form = document.getElementById('cessationForm');
+            form.innerHTML = '';
+            const question = questions[currentQuestionIndex];
+            let inputHtml = '';
+
+            switch(question.type) {
+                case 'number':
+                    inputHtml = `<input type="number" id="${question.id}" class="input-field" required>`;
+                    break;
+                case 'text':
+                    inputHtml = `<input type="text" id="${question.id}" class="input-field" placeholder="${question.placeholder || ''}" required>`;
+                    break;
+                case 'select':
+                    inputHtml = `<select id="${question.id}" class="select-field" required>${question.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}</select>`;
+                    break;
+                case 'slider':
+                    const defaultValue = Math.floor((question.min + question.max) / 2);
+                    inputHtml = `<div class="flex justify-between text-sm text-gray-600"><span>${question.min}</span><span>${question.max}</span></div><input type="range" id="${question.id}" min="${question.min}" max="${question.max}" value="${userAnswers[question.id] || defaultValue}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"><div class="text-center font-bold text-lg text-indigo-600 mt-2"><span id="sliderValue">${userAnswers[question.id] || defaultValue}</span></div>`;
+                    break;
+                case 'dynamic_select':
+                    inputHtml = `<select id="${question.id}" class="select-field" onchange="renderSubQuestion()">${question.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}</select><div id="sub_question_container" class="mt-4"></div>`;
+                    break;
+            }
+
+            form.innerHTML = `<div class="mb-4"><label for="${question.id}" class="block text-lg font-medium text-gray-800">${question.text}</label>${inputHtml}</div>`;
+            
+            if (question.type === 'dynamic_select') {
+                renderSubQuestion();
+            }
+            if (question.type === 'slider') {
+                const slider = document.getElementById(question.id);
+                const sliderValue = document.getElementById('sliderValue');
+                slider.oninput = () => { sliderValue.textContent = slider.value; };
+            }
+
+            // Restore previous answers
+            Object.keys(userAnswers).forEach(key => {
+                const el = document.getElementById(key);
+                if (el) {
+                    el.value = userAnswers[key];
+                }
+            });
+        }
+
+        window.renderSubQuestion = function() {
+            const question = questions[currentQuestionIndex];
+            if (question.type !== 'dynamic_select') return;
+            
+            const selectedOption = document.getElementById(question.id).value;
+            const subQuestion = question.sub_questions[selectedOption];
+            const container = document.getElementById('sub_question_container');
+            
+            let helpTextHtml = '';
+            if (subQuestion.help_text) {
+                helpTextHtml = `<p class="text-sm text-gray-500 mt-1">${subQuestion.help_text}</p>`;
+            }
+
+            container.innerHTML = `
+                <label for="${subQuestion.id}" class="block text-md font-medium text-gray-700">${subQuestion.text}</label>
+                <input type="${subQuestion.type}" id="${subQuestion.id}" class="input-field" required>
+                ${helpTextHtml}
+            `;
+            if(userAnswers[subQuestion.id]) {
+                document.getElementById(subQuestion.id).value = userAnswers[subQuestion.id];
+            }
+        }
+
+        function saveCurrentAnswer() {
+            const question = questions[currentQuestionIndex];
+            const input = document.getElementById(question.id);
+            if (!input || !input.value) return false;
+            userAnswers[question.id] = input.value;
+
+            if (question.type === 'dynamic_select') {
+                const subQuestionKey = Object.keys(question.sub_questions).find(key => key === input.value);
+                const subQuestion = question.sub_questions[subQuestionKey];
+                const subInput = document.getElementById(subQuestion.id);
+                if (!subInput || !subInput.value) return false;
+                userAnswers[subQuestion.id] = subInput.value;
+            }
+            return true;
+        }
+
+        window.navigateQuestion = function(direction) {
+            if (direction > 0 && !saveCurrentAnswer()) {
+                showMessage("Please answer the question before proceeding.");
+                return;
+            }
+            
+            currentQuestionIndex += direction;
+
+            if (currentQuestionIndex >= questions.length) {
+                currentQuestionIndex = questions.length - 1;
+                document.getElementById('nextBtn').style.display = 'none';
+                document.getElementById('submitBtn').style.display = 'inline-block';
+            } else if (currentQuestionIndex < 0) {
+                currentQuestionIndex = 0;
+            } else {
+                 document.getElementById('nextBtn').style.display = 'inline-block';
+                 document.getElementById('submitBtn').style.display = 'none';
+            }
+            document.getElementById('prevBtn').style.display = currentQuestionIndex > 0 ? 'inline-block' : 'none';
+            updateProgressBar();
+            renderCurrentQuestion();
+        }
+        
+        function updateProgressBar() {
+            const progress = ((currentQuestionIndex) / (questions.length - 1)) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+        }
+
+        window.submitAssessment = async function() {
+            if (!saveCurrentAnswer()) { 
+                showMessage("Please answer the final question."); 
+                return; 
+            }
+            
+            // Standardize nicotine usage
+            const usageType = userAnswers.nicotine_usage;
+            let standardizedCigs = 0;
+            if (usageType === 'Cigarettes') {
+                standardizedCigs = parseFloat(userAnswers.cigs_per_day) || 0;
+            } else if (usageType === 'Vapes') {
+                standardizedCigs = (parseFloat(userAnswers.puffs_per_day) || 0) / 15;
+            }
+            userAnswers.standardized_cigs_per_day = Math.round(standardizedCigs);
+
+            localStorage.setItem('nicotineAnswers', JSON.stringify(userAnswers));
+            showSection('report');
+            calculateAndDisplayRiskScore();
+            await generatePersonalizedReport();
+            await getMotivation();
+        }
+
+        function calculateAndDisplayRiskScore() {
+            const answers = JSON.parse(localStorage.getItem('nicotineAnswers'));
+            let score = 0;
+            score += (answers.standardized_cigs_per_day || 0) * 2;
+            if (answers.dependence === 'Within 5 minutes') score += 15;
+            if (answers.dependence === '6-30 minutes') score += 10;
+            score += (parseInt(answers.past_quit_attempts) || 0) * 2;
+            if (answers.other_substances === 'Often') score += 10;
+            if (answers.trauma_experience === 'Yes') score += 15;
+            score += parseInt(answers.stress_level);
+            if (answers.social_support === 'Not Supportive') score += 10;
+            score -= parseInt(answers.motivation_level);
+            score = Math.max(0, Math.min(100, Math.round(score)));
+            let interpretation = '';
+            if (score < 30) interpretation = 'Your results suggest a lower level of nicotine dependence. You have a strong foundation to build a successful quit plan.';
+            else if (score < 60) interpretation = 'Your results suggest a moderate level of nicotine dependence. A structured plan with the right support tools will be crucial for your success.';
+            else interpretation = 'Your results suggest a high level of nicotine dependence, likely with other factors making it harder to quit. This is very common. A comprehensive plan with strong medical and behavioural support is the most effective path forward.';
+            document.getElementById('riskScore').innerHTML = `<h3 class="text-xl font-bold mb-2">Your Dependence & Risk Score: ${score}/100</h3><p>${interpretation}</p>`;
+        }
+        // --- END: ASSESSMENT LOGIC ---
+
+        // --- START: MOCK API CALLS ---
+        async function callGeminiApi(prompt, generationConfig = null) {
+            console.log("Calling Gemini API with prompt:", prompt);
+            if (generationConfig && generationConfig.responseMimeType === "application/json") {
+                const answers = JSON.parse(localStorage.getItem('nicotineAnswers'));
+                const cigs = answers.standardized_cigs_per_day;
+                const mockReport = JSON.parse(JSON.stringify(mockStructuredReport)); // Deep copy
+
+                // Dynamically generate cessation plan
+                if (cigs > 20 || answers.dependence === 'Within 5 minutes') {
+                    mockReport.cessationPlan.content = "With a higher dependence, starting strong is key.\n* **NRT Recommendation:** Start with a Nicabate Step 1 (21mg) 24-hour patch. This gives you a strong, steady dose of nicotine to combat withdrawal, especially morning cravings. Combine this with a fast-acting option like Nicorette gum or lozenge for sudden urges.\n* **Pharmacological Option:** Varenicline (brand name Champix) is a highly effective option for you to discuss with your GP. It works by blocking nicotine receptors, which reduces cravings and the pleasure from smoking.\n* **Vaping:** A pharmacist-dispensed vape can be a powerful tool to manage the hand-to-mouth habit while you use patches to control the underlying dependence.";
+                } else if (cigs > 10) {
+                     mockReport.cessationPlan.content = "You're in a great position to quit with the right tools.\n* **NRT Recommendation:** A Nicabate Step 2 (14mg) patch is a good starting point. It provides a solid baseline of nicotine to ease withdrawal. Pair it with Nicorette QuickMist for rapid craving relief.\n* **Pharmacological Option:** Bupropion (brand name Zyban) is an excellent medication to discuss with your GP. It's a non-nicotine option that can significantly reduce cravings.\n* **Behavioural:** Focus on breaking associations. If you smoke with coffee, switch to tea or drink your coffee in a different place.";
+                } else {
+                     mockReport.cessationPlan.content = "You have lower dependence, so behavioural changes are just as important as medical aids.\n* **NRT Recommendation:** You may not need a patch. Consider using fast-acting NRT like Nicorette gum, lozenges, or QuickMist only when you have a craving. This puts you in control.\n* **Pharmacological Option:** While you may not need it, ask your GP about Varenicline if you're concerned about relapse. It can be very effective even for lighter smokers.\n* **Focus:** Your main task is to build new habits. Identify your triggers and create a plan for each one. For example, if you smoke after a meal, plan to go for a 5-minute walk instead.";
+                }
+
+                // Dynamically generate craving hacks
+                let hacks = "Based on what you've told us, here is a personalized roadmap for your toughest moments. This is your toolkit.\n";
+                if (answers.peak_craving_time.includes('Morning')) {
+                    hacks += "* **For Morning Cravings:** You said mornings are tough. A 24-hour patch (like the Nicabate we suggested) is perfect for this, as it delivers nicotine while you sleep so you wake up with fewer cravings. Also, change your routine immediately. Instead of reaching for nicotine, drink a large glass of cold water right away.\n";
+                }
+                if (answers.craving_triggers_activity === 'After meals') {
+                    hacks += "* **For After-Meal Cravings:** This is a strong habit. Break it by creating a new one. As soon as you finish eating, get up and brush your teeth. The minty freshness can reset your palate and kill the craving. A short walk is also a great option.\n";
+                }
+                 if (answers.craving_triggers_emotion.includes('Stress')) {
+                    hacks += "* **For Stress Cravings:** You link stress with nicotine. This is your brain's shortcut, but we can build a new one. When you feel stressed, use your NRT gum or lozenge proactively. Then, try the 'box breathing' technique: inhale for 4 seconds, hold for 4, exhale for 4, hold for 4. Repeat 5 times. This is a powerful and fast way to calm your nervous system.\n";
+                }
+                if (parseInt(answers.oral_fixation) > 6) {
+                    hacks += "* **For the Hand-to-Mouth Habit:** You said this physical action is important. This is where a flavourless, nicotine-free vape can be a useful tool, or even just a simple lollipop or chewing on a cinnamon stick. It satisfies the oral fixation without the harmful chemicals.\n";
+                }
+                if (answers.quit_fear) {
+                     hacks += `* **Addressing Your Fear of '${answers.quit_fear}':** It is completely normal to have this fear. Let's face it head-on. Many people find that the health benefits, like increased energy for exercise, actually help manage these concerns. Remember your motivation: '${answers.motivation_quit}'. This is more powerful than your fear.\n`;
+                }
+                mockReport.cravingHacks = { title: "Your Personalized Craving Hacks", content: hacks };
+
+
+                return new Promise(resolve => setTimeout(() => resolve(JSON.stringify(mockReport)), 2500));
+            }
+             if (prompt.includes("craving")) {
+                return new Promise(resolve => setTimeout(() => resolve("That sounds really tough. Let's try a quick grounding exercise. Place both feet flat on the floor. Press them down and feel the solid ground beneath you. You are right here, right now, and this moment will pass. Take one slow breath in, and one slow breath out."), 1500));
+            }
+            if (prompt.includes("motivation")) {
+                 return new Promise(resolve => setTimeout(() => resolve(`Remember your goal: ${JSON.parse(localStorage.getItem('nicotineAnswers')).motivation_quit}. Every moment you resist is a step closer to that reality. You're doing this!`), 1500));
+            }
+            return new Promise(resolve => setTimeout(() => resolve("Thank you for sharing that. It takes courage to look at these things. The awareness you're showing is a huge strength on this journey."), 1500));
+        }
+
+        async function callImagenApi(prompt) {
+            console.log("Calling Imagen API with prompt:", prompt);
+            return new Promise(resolve => setTimeout(() => resolve("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAPZJREFUeJzt2EFLQkEAUheHh4MuCB7A8xVf4Cq4zEquoEvoYhR3eQDBI/gCHsCj4k1Q4E2YN6fD4b6Z4E2Y3cyb94IHDw4O+I8AARCAAAQgAAEIQAACEIAABCAAAQhAAAIQgAAEIAABCEAAAhCAAAQgAAEIQAACEIAABCAAAQhAAAIQgAAEIAABCEAAAhCAAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAIQfAL+7AG3yQAAAAASUVORK5CYII="), 3000));
+        }
+        
+        const mockStructuredReport = {
+            cessationPlan: { title: "Your Empowering Cessation Plan", content: "" }, // Content will be populated dynamically
+            cravingHacks: { title: "Your Personalized Craving Hacks", content: "" }, // Content will be populated dynamically
+            traumaInsights: { title: "Trauma-Informed Insights", content: "It's common to use nicotine to cope with trauma-related feelings. This is a survival strategy, not a flaw.\n* **Grounding Technique:** When you feel overwhelmed, name 5 things you can see, 4 you can feel, 3 you can hear. This calms the nervous system.\n* **Self-Compassion:** Quitting is hard. Speak to yourself kindly during tough moments, as you would a friend." },
+            timeline: { title: "Withdrawal & Healing Timeline", content: "The first month is a journey of healing.\n* **Week 1:** Expect irritability. Your heart rate is already improving!\n* **Weeks 2-4:** Cravings lessen. Your lung function is getting better.\n* **1 Month:** You're more in control. Your energy levels are up." },
+            environment: { title: "Strengthening Your Environment", content: "Your surroundings matter.\n* **Social Support:** Tell supportive friends exactly how they can help (e.g., 'Can I call you when I have a craving?').\n* **Managing Triggers:** Proactively change your routines. If you smoke with coffee, try drinking tea for a week."}
+        };
+        // --- END: MOCK API CALLS ---
+
+        // --- START: REPORT & AI FEATURES ---
+        async function generatePersonalizedReport() {
+            const reportLoader = document.getElementById('reportLoader');
+            const reportContentEl = document.getElementById('geminiReportContent');
+            reportContentEl.innerHTML = '';
+            reportLoader.style.display = 'block';
+
+            const answers = JSON.parse(localStorage.getItem('nicotineAnswers'));
+            const prompt = `Generate a highly personalized, practical, and empowering nicotine cessation report for a user to take to their GP. The tone must be clear, directive, and focused on user empowerment and self-affirmation. Base it on this detailed JSON data: ${JSON.stringify(answers)}. Return the report as a JSON object following the specified schema. 
+            The report MUST include a new 'cravingHacks' section. This section should be a detailed, personalized roadmap for the user's toughest moments, using their specific answers about timing, emotional triggers, activity triggers, and oral fixation. It should combine recommendations for NRT (patches, gum), behavioural changes (new routines), and physical tools (lollipops, water, vapes) in a practical way.
+            The 'cessationPlan' must also be highly specific, recommending products like Nicabate patches (by strength), Nicorette gum/mist, pharmacist-dispensed vapes, Varenicline (Champix), and Bupropion where appropriate based on the user's dependence level. Explain WHY each is recommended.`;
+            
+            const generationConfig = {
+                responseMimeType: "application/json",
+                responseSchema: { type: "OBJECT", properties: { 
+                    cessationPlan: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING" } } }, 
+                    cravingHacks: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING" } } },
+                    traumaInsights: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING" } } }, 
+                    timeline: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING" } } }, 
+                    environment: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING" } } } 
+                } }
+            };
+            
+            try {
+                const geminiResponse = await callGeminiApi(prompt, generationConfig);
+                const reportData = JSON.parse(geminiResponse);
+                renderStructuredReport(reportData);
+            } catch (error) {
+                console.error("Error generating structured report:", error);
+                reportContentEl.innerHTML = `<p class="text-red-600 p-4">We're sorry, but there was an error generating your report. Please try again later.</p>`;
+            } finally {
+                 reportLoader.style.display = 'none';
+            }
+        }
+
+        function renderStructuredReport(data) {
+            const reportContentEl = document.getElementById('geminiReportContent');
+            reportContentEl.innerHTML = '';
+            Object.values(data).forEach(section => {
+                if (!section || !section.title || !section.content) return; // Skip invalid sections
+                const item = document.createElement('div');
+                item.className = 'accordion-item';
+                const button = document.createElement('button');
+                button.className = 'accordion-button';
+                button.innerHTML = `<span>${section.title}</span><span class="transform transition-transform duration-300">+</span>`;
+                const content = document.createElement('div');
+                content.className = 'accordion-content';
+                content.innerHTML = section.content.replace(/\n/g, '<br>').replace(/\* /g, '&bull; ');
+                button.onclick = () => {
+                    const isVisible = content.style.display === 'block';
+                    content.style.display = isVisible ? 'none' : 'block';
+                    button.querySelector('span:last-child').classList.toggle('rotate-45', !isVisible);
+                };
+                item.appendChild(button);
+                item.appendChild(content);
+                reportContentEl.appendChild(item);
+            });
+        }
+
+        window.handleSOS = async function() {
+            const trigger = document.getElementById('sosTriggerInput').value;
+            const responseEl = document.getElementById('sosResponse');
+            responseEl.style.display = 'block';
+            responseEl.innerHTML = `<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>`;
+            const prompt = `A user is having an intense nicotine craving. Their self-reported trigger is: "${trigger}". Provide one immediate, actionable, and trauma-informed coping strategy. The tone must be extremely gentle and supportive.`;
+            try {
+                const geminiResponse = await callGeminiApi(prompt);
+                responseEl.innerHTML = geminiResponse.replace(/\n/g, '<br>');
+            } catch (error) {
+                responseEl.innerHTML = `<p class="text-red-600">Sorry, an error occurred. Try taking 5 slow, deep breaths.</p>`;
+            }
+        }
+
+        window.getMotivation = async function() {
+            const answers = JSON.parse(localStorage.getItem('nicotineAnswers'));
+            if (!answers || !answers.motivation_quit) {
+                document.getElementById('motivationText').textContent = 'Complete the assessment to unlock personalized motivation!';
+                return;
+            }
+            const motivationEl = document.getElementById('motivationText');
+            motivationEl.textContent = `Thinking of a boost for you...`;
+            const prompt = `A user's primary motivation for quitting nicotine is "${answers.motivation_quit}". Write one short, powerful, encouraging sentence that directly relates to this motivation.`;
+            try {
+                motivationEl.textContent = await callGeminiApi(prompt);
+            } catch (error) {
+                motivationEl.textContent = "Remember why you started this journey. You have the strength to see it through.";
+            }
+        }
+
+        window.generateSafeSpaceImage = async function() {
+            const prompt = document.getElementById('safeSpacePrompt').value;
+            if (prompt.trim().length < 10) { 
+                showMessage("Please provide a more detailed description of your safe space."); 
+                return; 
+            }
+            const container = document.getElementById('safeSpaceImageContainer');
+            const loader = document.getElementById('imageLoader');
+            const img = document.getElementById('safeSpaceImage');
+            const wrapper = document.getElementById('imageWrapper');
+            
+            const existingError = wrapper.querySelector('.error-message');
+            if (existingError) existingError.remove();
+
+            container.style.display = 'block';
+            img.style.display = 'none';
+            loader.style.display = 'block';
+            
+            try {
+                const base64Data = await callImagenApi(`A serene, calming, beautiful digital painting of: ${prompt}. No people. Soft, gentle lighting.`);
+                img.src = `data:image/png;base64,${base64Data}`;
+                img.style.display = 'block';
+            } catch (error) {
+                console.error("Error generating safe space image:", error);
+                wrapper.insertAdjacentHTML('beforeend', `<p class="text-red-600 text-center error-message">Sorry, we couldn't create your image at this time.</p>`);
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+        // --- END: REPORT & AI FEATURES ---
+
+        // --- START: NARRATIVE & TRACKER ---
+        const narrativePrompts = ["Describe a time when nicotine felt like a friend.", "If your addiction had a voice, what would it say?", "What is one kind thing you can do for your body today?", "Imagine your life one year from now, free from nicotine. What does it look like?", "Write a letter of goodbye to nicotine."];
+        window.getNewNarrativePrompt = () => {
+            const promptEl = document.getElementById('narrativePrompt');
+            promptEl.textContent = narrativePrompts[Math.floor(Math.random() * narrativePrompts.length)];
+            document.getElementById('narrativeFeedback').style.display = 'none';
+            document.getElementById('narrativeInput').value = '';
+        }
+        window.analyzeNarrative = async () => {
+            const userInput = document.getElementById('narrativeInput').value;
+            if (userInput.trim().length < 10) { showMessage("Please write a little more before we can offer feedback."); return; }
+            const feedbackEl = document.getElementById('narrativeFeedback');
+            feedbackEl.style.display = 'block';
+            feedbackEl.innerHTML = `<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>`;
+            const prompt = `A user is doing a reflective exercise. Their reflection is: "${userInput}". Provide gentle, compassionate feedback in 2-3 short paragraphs. Validate their feelings and highlight their strengths.`;
+            try {
+                feedbackEl.innerHTML = (await callGeminiApi(prompt)).replace(/\n/g, '<br>');
+            } catch (error) {
+                feedbackEl.innerHTML = `<p class="text-red-600">Sorry, an error occurred.</p>`;
+            }
+        }
+        
+        let progressChart;
+        const trackingData = JSON.parse(localStorage.getItem('trackingData')) || { labels: [], cravings: [], moods: [] };
+        function initializeChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            if(progressChart) progressChart.destroy();
+            progressChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: trackingData.labels, datasets: [ { label: 'Cravings Level', data: trackingData.cravings, borderColor: '#4F46E5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, yAxisID: 'y' }, { label: 'Mood', data: trackingData.moods, borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, yAxisID: 'y1' } ] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Cravings (0-10)'}, min: 0, max: 10 }, y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Mood (1-5)'}, min: 1, max: 5, grid: { drawOnChartArea: false } } } }
+            });
+        }
+        window.logDailyData = () => {
+            const date = new Date().toLocaleDateString('en-CA');
+            const existingIndex = trackingData.labels.indexOf(date);
+            if (existingIndex !== -1) {
+                trackingData.cravings[existingIndex] = document.getElementById('cravings').value;
+                trackingData.moods[existingIndex] = document.getElementById('mood').value;
+            } else {
+                trackingData.labels.push(date);
+                trackingData.cravings.push(document.getElementById('cravings').value);
+                trackingData.moods.push(document.getElementById('mood').value);
+            }
+            localStorage.setItem('trackingData', JSON.stringify(trackingData));
+            initializeChart();
+            showMessage("Your progress has been logged!");
+        }
+        // --- END: NARRATIVE & TRACKER ---
+
+        // --- START: NAVIGATION & MODALS ---
+        const sections = ['assessment', 'report', 'tracker', 'narrative', 'resources'];
+        const navButtons = document.querySelectorAll('.nav-btn');
+        window.showSection = (sectionId) => {
+            sections.forEach(id => { document.getElementById(id).style.display = id === sectionId ? 'block' : 'none'; });
+            navButtons.forEach(btn => {
+                btn.classList.toggle('bg-indigo-100', btn.textContent.toLowerCase().includes(sectionId));
+                btn.classList.toggle('text-indigo-700', btn.textContent.toLowerCase().includes(sectionId));
+            });
+            if (sectionId === 'tracker') initializeChart();
+            if (sectionId === 'report' && !localStorage.getItem('nicotineAnswers')) {
+                showMessage("Please complete the assessment first to view your report.");
+                showSection('assessment');
+            } else {
+                document.querySelector('button[onclick="showSection(\'report\')"]').disabled = false;
+            }
+        }
+        window.showMessage = (message) => { document.getElementById('modalMessage').textContent = message; document.getElementById('messageModal').style.display = "block"; }
+        window.openSOSModal = () => { document.getElementById('sosModal').style.display = 'block'; }
+        window.closeModal = (modalId) => { document.getElementById(modalId).style.display = "none"; }
+        window.onclick = (event) => { if (event.target.classList.contains('modal')) event.target.style.display = "none"; }
+        // --- END: NAVIGATION & MODALS ---
+
+        // --- START: INITIALIZATION ---
+        window.onload = () => {
+            renderCurrentQuestion();
+            updateProgressBar();
+            getNewNarrativePrompt();
+            if (localStorage.getItem('nicotineAnswers')) {
+                document.querySelector('button[onclick="showSection(\'report\')"]').disabled = false;
+                getMotivation();
+            }
+            navButtons[0].classList.add('bg-indigo-100', 'text-indigo-700');
+        };
+        // --- END: INITIALIZATION ---
+    </script>
+</body>
+</html>
