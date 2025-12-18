@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Interview: Data Collection</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #2980b9;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --success: #27ae60;
+            --danger: #c0392b;
+            --info-bg: #e8f4fd;
+            --info-border: #3498db;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: #333;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 850px;
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-top: 6px solid var(--accent);
+        }
+
+        header {
+            padding: 25px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            text-align: center;
+        }
+        
+        h1 { margin: 0; color: var(--primary); font-size: 1.6rem; }
+        .subtitle { color: #7f8c8d; font-size: 0.9rem; margin-top: 5px; }
+
+        .progress-container { background: #eee; height: 8px; width: 100%; }
+        .progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.4s ease; }
+
+        .content { padding: 30px; flex: 1; }
+        .section { display: none; animation: slideIn 0.3s ease-out; }
+        .section.active { display: block; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 { color: var(--secondary); margin-top: 0; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+        
+        /* Educational Boxes */
+        .intro-box { background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #95a5a6; margin-bottom: 25px; color: #555; }
+        
+        .guidance-box {
+            background-color: var(--info-bg);
+            border-left: 4px solid var(--info-border);
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #2c3e50;
+        }
+        .guidance-box strong { color: var(--accent); }
+
+        /* Form Elements */
+        label { display: block; font-weight: 600; margin-bottom: 6px; color: var(--secondary); margin-top: 15px; }
+        .hint { display: block; font-size: 0.85rem; color: #7f8c8d; margin-bottom: 8px; font-style: italic; }
+        
+        input, textarea, select {
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px;
+            font-size: 1rem; box-sizing: border-box; font-family: inherit; transition: border 0.2s;
+        }
+        input:focus, textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
+        textarea { min-height: 100px; resize: vertical; }
+
+        /* Dynamic List Styles */
+        .event-list { margin-bottom: 20px; }
+        .empty-state { text-align: center; padding: 20px; background: #f9f9f9; border-radius: 6px; color: #999; border: 2px dashed #eee; }
+        
+        .event-card {
+            background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 10px;
+            position: relative; border-left: 4px solid var(--success); box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+        .event-card h4 { margin: 0 0 5px 0; color: var(--primary); }
+        .event-card p { margin: 0; color: #555; font-size: 0.95rem; }
+        .event-meta { font-size: 0.85rem; color: #888; margin-bottom: 8px; display: block; }
+        .btn-remove { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #aaa; cursor: pointer; font-size: 1.2rem; }
+        .btn-remove:hover { color: var(--danger); }
+
+        /* Add Entry Form Box */
+        .entry-form-box {
+            background: #fff; border: 2px solid #e9ecef; border-radius: 8px; padding: 25px; margin-top: 20px; display: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .entry-form-box.open { display: block; }
+        .entry-form-box h4 { margin-top: 0; color: var(--accent); border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+
+        /* Buttons */
+        .btn-row { display: flex; justify-content: space-between; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+        .btn { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 500; transition: all 0.2s; }
+        
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--secondary); transform: translateY(-1px); }
+        
+        .btn-secondary { background: #ecf0f1; color: #555; }
+        .btn-secondary:hover { background: #dee2e6; }
+
+        .btn-add { background: white; border: 2px dashed #bdc3c7; color: #7f8c8d; width: 100%; padding: 15px; margin-top: 10px; }
+        .btn-add:hover { border-color: var(--accent); color: var(--accent); background: #f4faff; }
+
+        .btn-save-entry { background: var(--success); color: white; width: 100%; margin-top: 15px; }
+        .btn-save-entry:hover { background: #219150; }
+
+        .btn-cancel { background: transparent; color: #7f8c8d; border: 1px solid #ddd; width: 100%; margin-top: 10px; }
+
+        .final-save { background: #8e44ad; color: white; font-weight: bold; font-size: 1.1rem; padding: 15px 30px; box-shadow: 0 4px 10px rgba(142,68,173,0.3); }
+        .final-save:hover { background: #732d91; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Clinical History Interview</h1>
+        <div class="subtitle">Confidential &bull; Offline Mode &bull; JSON Export Ready</div>
+    </header>
+    <div class="progress-container"><div class="progress-bar" id="progress"></div></div>
+
+    <div class="content" id="main-content">
+        
+        <div class="section active" data-id="1">
+            <h2>1. Respondent Information</h2>
+            <div class="intro-box">
+                This tool is designed to collect a detailed developmental and trauma history.
+            </div>
+            <label>Full Name</label>
+            <input type="text" id="client_name" placeholder="Enter full name...">
+            
+            <label>Date</label>
+            <input type="date" id="interview_date">
+            
+            <label>Current Living Situation</label>
+            <div class="hint">Who do you live with? Is the environment stable?</div>
+            <textarea id="living_situation" rows="3"></textarea>
+        </div>
+
+        <div class="section" data-id="2">
+            <h2>2. Developmental Background</h2>
+            <div class="intro-box">
+                Please provide a narrative overview of the early environment (Ages 0-12).
+            </div>
+            <label>Family Stability & Movements</label>
+            <div class="hint">Frequent moves? Separation from parents? Who was the primary caregiver?</div>
+            <textarea id="dev_stability"></textarea>
+
+            <label>Emotional Atmosphere</label>
+            <div class="hint">Was the home warm? Chaotic? Silent? Unpredictable?</div>
+            <textarea id="dev_atmosphere"></textarea>
+        </div>
+
+        <div class="section" data-id="3">
+            <h2>3. Direct Trauma History</h2>
+            <div class="intro-box">
+                We will record distinct events where you experienced actual or threatened harm. Add as many as needed.
+            </div>
+            
+            <div id="list-direct-trauma" class="event-list">
+                <div class="empty-state">No events recorded yet.</div>
+            </div>
+
+            <button type="button" class="btn btn-add" onclick="openEntryForm('direct-trauma')">+ Add A Traumatic Event</button>
+
+            <div class="entry-form-box" id="form-direct-trauma">
+                <h4>New Direct Event</h4>
+                
+                <div class="guidance-box">
+                    <strong>What counts as a "Direct Event"?</strong><br>
+                    This includes any situation where your life or physical safety was threatened. 
+                    Examples include: Serious accidents (car, work), physical assaults, sexual violence, natural disasters, or severe medical emergencies.
+                    <br><br>
+                    <em>Note: If the event happened repeatedly (like childhood abuse), you can enter it as a single "period" (e.g., "Ages 7-10").</em>
+                </div>
+
+                <label>Age at time of event</label>
+                <input type="text" id="dt_age" placeholder="e.g., 7 years old, or 'Age 12-14'">
+                
+                <label>Type of Event</label>
+                <input type="text" id="dt_type" placeholder="e.g., Car Accident, Physical Assault">
+                
+                <label>Description</label>
+                <textarea id="dt_desc" placeholder="Briefly describe what happened. You do not need to be graphic if it is too distressing."></textarea>
+                
+                <label>Impact / Result</label>
+                <div class="hint">Did you feel fear, horror, or helplessness? Did you sustain injuries?</div>
+                <textarea id="dt_impact" placeholder="Immediate emotional reaction or lasting effect..."></textarea>
+
+                <button class="btn btn-save-entry" onclick="saveEvent('direct-trauma')">Save Event</button>
+                <button class="btn btn-cancel" onclick="closeEntryForm('direct-trauma')">Cancel</button>
+            </div>
+        </div>
+
+        <div class="section" data-id="4">
+            <h2>4. Witnessed or Learned Trauma</h2>
+            <div class="intro-box">
+                Trauma isn't always direct. It can happen when we see others hurt or learn that loved ones were in danger.
+            </div>
+
+            <div id="list-witness-trauma" class="event-list">
+                <div class="empty-state">No events recorded yet.</div>
+            </div>
+
+            <button type="button" class="btn btn-add" onclick="openEntryForm('witness-trauma')">+ Add Witnessed/Learned Event</button>
+
+            <div class="entry-form-box" id="form-witness-trauma">
+                <h4>New Witnessed/Learned Event</h4>
+
+                <div class="guidance-box">
+                    <strong>Understanding this section:</strong><br>
+                    <ul>
+                        <li><strong>Witnessed:</strong> Events you saw happen as they occurred (e.g., seeing a parent being hit, witnessing a severe accident).</li>
+                        <li><strong>Learned:</strong> Finding out that a violent or accidental traumatic event happened to a close family member or close friend (e.g., receiving a phone call about a death or injury).</li>
+                    </ul>
+                </div>
+
+                <label>Age at time</label>
+                <input type="text" id="wt_age">
+                
+                <label>Relationship to Victim</label>
+                <input type="text" id="wt_rel" placeholder="e.g., Mother, Sibling, Close Friend">
+                
+                <label>What happened?</label>
+                <textarea id="wt_desc" placeholder="Describe what you saw or what you learned had happened to them."></textarea>
+
+                <button class="btn btn-save-entry" onclick="saveEvent('witness-trauma')">Save Event</button>
+                <button class="btn btn-cancel" onclick="closeEntryForm('witness-trauma')">Cancel</button>
+            </div>
+        </div>
+
+        <div class="section" data-id="5">
+            <h2>5. Loss of Control & Helplessness</h2>
+            <div class="intro-box">
+                This section explores moments of "Enforced Helplessness"—situations where your autonomy was stripped away.
+            </div>
+
+            <div id="list-control-trauma" class="event-list">
+                <div class="empty-state">No incidents recorded yet.</div>
+            </div>
+
+            <button type="button" class="btn btn-add" onclick="openEntryForm('control-trauma')">+ Add Incident of Helplessness</button>
+
+            <div class="entry-form-box" id="form-control-trauma">
+                <h4>New Incident of Helplessness</h4>
+
+                <div class="guidance-box">
+                    <strong>Why we ask this:</strong><br>
+                    Current reactions of rage or panic (tantrums) often stem from past moments where you were trapped or powerless.
+                    <br><br>
+                    <strong>Examples to consider:</strong>
+                    <ul>
+                        <li>Being physically restrained or held down (by parents, peers, or partners).</li>
+                        <li>Being locked in a room or prevented from leaving a space.</li>
+                        <li>Medical or legal situations where you felt you had no voice or choice.</li>
+                        <li>"Cornered" situations where fight/flight was impossible.</li>
+                    </ul>
+                </div>
+
+                <label>Context/Setting</label>
+                <input type="text" id="ct_context" placeholder="e.g., School, Hospital, Police interaction, Home">
+                
+                <label>Description of Constraint</label>
+                <div class="hint">How were you prevented from leaving or acting? How were you trapped?</div>
+                <textarea id="ct_desc"></textarea>
+                
+                <label>Emotional Response</label>
+                <textarea id="ct_impact" placeholder="e.g., Panic, Rage, Dissociation, 'Shutting down'"></textarea>
+
+                <button class="btn btn-save-entry" onclick="saveEvent('control-trauma')">Save Incident</button>
+                <button class="btn btn-cancel" onclick="closeEntryForm('control-trauma')">Cancel</button>
+            </div>
+        </div>
+
+        <div class="section" data-id="6">
+            <h2>6. Current Stressors & Coping</h2>
+            <div class="intro-box">
+                Please detail current legal or social pressures and how you are currently coping.
+            </div>
+            
+            <label>Legal / Social Pressures</label>
+            <div class="hint">Pending charges, court dates, or threats to stability.</div>
+            <textarea id="curr_legal"></textarea>
+
+            <label>Substance Use as Coping</label>
+            <div class="hint">Current usage patterns (Vaping, Cannabis, Alcohol) and their function (e.g., to sleep, to calm rage).</div>
+            <textarea id="curr_substance"></textarea>
+
+            <label>Emotional Regulation (Tantrums/Rage)</label>
+            <div class="hint">Do you experience "emotional hijacking" where you lose control?</div>
+            <textarea id="curr_rage"></textarea>
+        </div>
+
+        <div class="section" data-id="7">
+            <h2>7. Review & Export</h2>
+            <div class="intro-box">
+                Interview complete. Click below to generate the structured <b>JSON file</b> required for analysis.
+            </div>
+            <div style="text-align: center; margin-top: 50px;">
+                <button type="button" class="btn final-save" onclick="exportJSON()">Download Clinical Data (.json)</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="btn-row">
+        <button class="btn btn-secondary" id="btn-back" onclick="changeStep(-1)" disabled>Back</button>
+        <button class="btn btn-primary" id="btn-next" onclick="changeStep(1)">Next Section</button>
+    </div>
+</div>
+
+<script>
+    // --- STATE MANAGEMENT ---
+    let currentStep = 1;
+    const totalSteps = 7;
+    
+    // Store for dynamic lists
+    const eventStore = {
+        'direct-trauma': [],
+        'witness-trauma': [],
+        'control-trauma': []
+    };
+
+    // --- NAVIGATION ---
+    function updateUI() {
+        document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+        document.querySelector(`.section[data-id="${currentStep}"]`).classList.add('active');
+        
+        // Progress bar
+        const pct = ((currentStep-1) / (totalSteps-1)) * 100;
+        document.getElementById('progress').style.width = `${pct}%`;
+
+        // Buttons
+        document.getElementById('btn-back').disabled = currentStep === 1;
+        const nextBtn = document.getElementById('btn-next');
+        if(currentStep === totalSteps) {
+            nextBtn.style.display = 'none';
+        } else {
+            nextBtn.style.display = 'block';
+            nextBtn.innerText = currentStep === totalSteps - 1 ? 'Finish Interview' : 'Next Section';
+        }
+        
+        window.scrollTo(0,0);
+    }
+
+    function changeStep(dir) {
+        if(currentStep + dir >= 1 && currentStep + dir <= totalSteps) {
+            currentStep += dir;
+            updateUI();
+        }
+    }
+
+    // --- DYNAMIC LIST LOGIC ---
+    function openEntryForm(type) {
+        document.getElementById(`form-${type}`).classList.add('open');
+        document.querySelector(`.section[data-id="${currentStep}"] .btn-add`).style.display = 'none';
+        document.getElementById('btn-next').disabled = true; 
+    }
+
+    function closeEntryForm(type) {
+        document.getElementById(`form-${type}`).classList.remove('open');
+        document.querySelector(`.section[data-id="${currentStep}"] .btn-add`).style.display = 'block';
+        document.getElementById('btn-next').disabled = false;
+        clearInputs(type);
+    }
+
+    function clearInputs(type) {
+        const form = document.getElementById(`form-${type}`);
+        form.querySelectorAll('input, textarea').forEach(i => i.value = '');
+    }
+
+    function saveEvent(type) {
+        let newEvent = {};
+        
+        if (type === 'direct-trauma') {
+            newEvent = {
+                age: document.getElementById('dt_age').value,
+                title: document.getElementById('dt_type').value || 'Untitled Event',
+                desc: document.getElementById('dt_desc').value,
+                impact: document.getElementById('dt_impact').value
+            };
+        } else if (type === 'witness-trauma') {
+            newEvent = {
+                age: document.getElementById('wt_age').value,
+                title: 'Witnessed: ' + (document.getElementById('wt_rel').value || 'Unknown'),
+                desc: document.getElementById('wt_desc').value,
+                impact: null 
+            };
+        } else if (type === 'control-trauma') {
+            newEvent = {
+                age: '', 
+                title: document.getElementById('ct_context').value || 'Incident',
+                desc: document.getElementById('ct_desc').value,
+                impact: document.getElementById('ct_impact').value
+            };
+        }
+
+        eventStore[type].push(newEvent);
+        renderList(type);
+        closeEntryForm(type);
+    }
+
+    function renderList(type) {
+        const container = document.getElementById(`list-${type}`);
+        const list = eventStore[type];
+        
+        if (list.length === 0) {
+            container.innerHTML = '<div class="empty-state">No events recorded yet.</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        list.forEach((evt, index) => {
+            const div = document.createElement('div');
+            div.className = 'event-card';
+            div.innerHTML = `
+                <button class="btn-remove" onclick="removeEvent('${type}', ${index})">&times;</button>
+                <span class="event-meta">${evt.age ? 'Age: ' + evt.age : 'Undated'}</span>
+                <h4>${evt.title}</h4>
+                <p>${evt.desc}</p>
+                ${evt.impact ? `<p style="margin-top:5px; font-style:italic; color:#666;">Impact: ${evt.impact}</p>` : ''}
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function removeEvent(type, index) {
+        eventStore[type].splice(index, 1);
+        renderList(type);
+    }
+
+    // --- JSON EXPORT ---
+    function exportJSON() {
+        const name = document.getElementById('client_name').value || "Client";
+        const date = document.getElementById('interview_date').value;
+
+        // Construct structured object
+        const finalData = {
+            metadata: {
+                name: name,
+                date: date,
+                version: "2.1"
+            },
+            history: {
+                living_situation: document.getElementById('living_situation').value,
+                development: {
+                    stability: document.getElementById('dev_stability').value,
+                    atmosphere: document.getElementById('dev_atmosphere').value
+                },
+                current_context: {
+                    legal: document.getElementById('curr_legal').value,
+                    substance: document.getElementById('curr_substance').value,
+                    regulation: document.getElementById('curr_rage').value
+                }
+            },
+            events: {
+                direct: eventStore['direct-trauma'],
+                witness: eventStore['witness-trauma'],
+                control: eventStore['control-trauma']
+            }
+        };
+
+        const blob = new Blob([JSON.stringify(finalData, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Clinical_Data_${name.replace(/\s+/g, '_')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }
+
+    // Init defaults
+    document.getElementById('interview_date').valueAsDate = new Date();
+</script>
+
+</body>
+</html>
