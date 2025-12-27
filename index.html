@@ -29,20 +29,58 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
         .btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+        .grid-link { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
     </style>
 </head>
 <body class="text-slate-800">
     <div id="loginContainer" class="glass p-8 max-w-md w-full text-center">
-        <h1 class="text-2xl font-bold mb-6">Psychometric Portal Login</h1>
+        <h1 class="text-2xl font-bold mb-6">Psychometric Tools Portal</h1>
         <input type="password" id="passwordInput" placeholder="Password" class="mb-4 w-full p-3 rounded bg-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-        <button id="loginButton" class="btn bg-blue-500 text-white font-semibold px-4 py-2 rounded w-full">Enter</button>
+        <button id="loginButton" class="btn bg-blue-500 text-white font-semibold px-4 py-2 rounded w-full">Enter Portal</button>
         <p id="errorMsg" class="text-red-600 mt-2 hidden">Incorrect password</p>
     </div>
 
-    <div id="mainContainer" class="glass p-8 max-w-xl w-full text-center hidden">
-        <h1 class="text-2xl font-bold mb-6">AI Powered Psychometric Tools</h1>
-        <p class="mb-6">Choose from the tools below.</p>
-        <a href="AdvancedRelapsePreventionAssessment.html" class="btn bg-green-500 text-white font-semibold px-4 py-2 rounded inline-block">Open Relapse Prevention Assessment</a>
+    <div id="mainContainer" class="glass p-8 max-w-6xl w-full text-center hidden">
+        <h1 class="text-3xl font-bold mb-8">AI Powered Psychometric Tools</h1>
+        <p class="mb-8 text-lg text-slate-600">Comprehensive assessment suite for personal development, addiction recovery, and career insights.</p>
+        
+        <div class="grid grid-link mb-8">
+            <a href="AdvancedRelapsePreventionAssessment.html" class="btn bg-green-500 text-white font-semibold px-6 py-4 rounded-lg block text-left hover:bg-green-600">
+                <div class="text-xl font-bold mb-1">🧠 Relapse Prevention</div>
+                <div class="text-sm opacity-90">Advanced 100+ question assessment with patient & clinician reports</div>
+            </a>
+            
+            <a href="NicotineHelper.html" class="btn bg-orange-500 text-white font-semibold px-6 py-4 rounded-lg block text-left hover:bg-orange-600">
+                <div class="text-xl font-bold mb-1">🚭 Nicotine Cessation</div>
+                <div class="text-sm opacity-90">Interactive trauma-informed nicotine quitting toolkit with AI support</div>
+            </a>
+            
+            <a href="interview_app.html" class="btn bg-purple-500 text-white font-semibold px-6 py-4 rounded-lg block text-left hover:bg-purple-600">
+                <div class="text-xl font-bold mb-1">📋 Clinical Interview</div>
+                <div class="text-sm opacity-90">Structured trauma history & clinical data collection (JSON export)</div>
+            </a>
+            
+            <a href="WorkStyleReport.html" class="btn bg-indigo-500 text-white font-semibold px-6 py-4 rounded-lg block text-left hover:bg-indigo-600">
+                <div class="text-xl font-bold mb-1">💼 Work Style Navigator</div>
+                <div class="text-sm opacity-90">AI-powered career assessment with personalized recommendations</div>
+            </a>
+            
+            <a href="GeneticInsightsEngine.html" class="btn bg-teal-500 text-white font-semibold px-6 py-4 rounded-lg block text-left hover:bg-teal-600">
+                <div class="text-xl font-bold mb-1">🧬 Genetic Insights</div>
+                <div class="text-sm opacity-90">Personalized genetic & behavioral analysis engine</div>
+            </a>
+            
+            <a href="bookFinder.html" class="btn bg-pink-500 text-white font-semibold px-6 py-4 rounded-lg block text-left hover:bg-pink-600">
+                <div class="text-xl font-bold mb-1">📚 AI Book Finder</div>
+                <div class="text-sm opacity-90">Intelligent book recommendations powered by AI analysis</div>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-slate-500">
+            <div>🔒 Password protected | 📱 Mobile responsive | 🤖 AI powered</div>
+            <div>⚡ Works offline | 📤 PDF/JSON export | 🆓 No accounts needed</div>
+            <div><a href="https://srexxx.github.io/psych0/" class="underline hover:text-slate-700">View on GitHub Pages →</a></div>
+        </div>
     </div>
 
     <script>
